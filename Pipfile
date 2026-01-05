@@ -1,0 +1,16 @@
+[packages]
+python-dotenv = "*"
+python-bidi = "*"
+playwright = "*"
+langchain-google-genai = "*"
+langgraph = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
+
+[scripts]
+visual-check = "python agent_web_visual_issues.py"
+spell-check = "python agent_web_speller.py"
+install-playwright = "playwright install"

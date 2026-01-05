@@ -16,10 +16,50 @@ An intelligent web scraping and validation agent that uses AI to analyze website
 
 ## Installation
 
+### Quick Setup (Recommended)
+
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd ai-agent-web-validator
+cd agent-validator
+```
+
+2. Run the setup script:
+```bash
+./setup.sh
+```
+
+This script will install pipenv, create the virtual environment, install all dependencies, and set up Playwright browsers.
+
+### Manual Setup with pipenv
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd agent-validator
+```
+
+2. Install pipenv if you haven't already:
+```bash
+pip install pipenv
+```
+
+3. Install dependencies and create virtual environment:
+```bash
+pipenv install
+```
+
+4. Install Playwright browsers:
+```bash
+pipenv run install-playwright
+```
+
+### Alternative: Manual Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd agent-validator
 ```
 
 2. Create a virtual environment and activate it:
@@ -56,9 +96,23 @@ Get your free API key from [Google AI Studio](https://makersuite.google.com/app/
 url_to_test = "https://www.example.com"
 ```
 
-2. Run the script:
+2. Run the scripts using pipenv:
+
+For spell checking:
 ```bash
+pipenv run spell-check
+```
+
+For visual issue analysis:
+```bash
+pipenv run visual-check
+```
+
+Or run directly with pipenv shell:
+```bash
+pipenv shell
 python agent_web_speller.py
+python agent_web_visual_issues.py
 ```
 
 3. The agent will:
