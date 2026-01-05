@@ -4,11 +4,12 @@ python-bidi = "*"
 playwright = "*"
 langchain-google-genai = "*"
 langgraph = "*"
+google-generativeai = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.9"
+python_version = "3.13"
 
 [scripts]
 visual-check = "python agent_web_visual_issues.py"
