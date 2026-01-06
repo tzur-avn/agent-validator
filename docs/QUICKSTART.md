@@ -5,13 +5,8 @@
 ### 1. Install Dependencies
 
 ```bash
-# Using pipenv (recommended)
 pipenv install
 pipenv run install-playwright
-
-# Or using pip
-pip install -r requirements.txt
-playwright install chromium
 ```
 
 ### 2. Set Up API Key
@@ -26,7 +21,7 @@ Get your free API key at [Google AI Studio](https://makersuite.google.com/app/ap
 ### 3. Run Your First Validation
 
 ```bash
-python main.py --url https://example.com
+pipenv run python main.py --url https://example.com
 ```
 
 That's it! You'll see a text report in your console.
@@ -37,16 +32,16 @@ That's it! You'll see a text report in your console.
 
 ```bash
 # Spell check only
-python main.py --url https://example.com --agents spell_checker
+pipenv run python main.py --url https://example.com --agents spell_checker
 
 # Visual QA only
-python main.py --url https://example.com --agents visual_qa
+pipenv run python main.py --url https://example.com --agents visual_qa
 ```
 
 ### Generate HTML Report
 
 ```bash
-python main.py --url https://example.com --format html --output reports/
+pipenv run python main.py --url https://example.com --format html --output reports/
 ```
 
 Open the generated HTML file in your browser for an interactive dashboard!
@@ -67,25 +62,25 @@ targets:
 
 3. Run with config:
 ```bash
-python main.py --config my-config.yaml
+pipenv run python main.py --config my-config.yaml
 ```
 
 ### Test Multiple Viewports
 
 ```bash
-python main.py --config examples/mobile_responsive.yaml --format html
+pipenv run python main.py --config examples/mobile_responsive.yaml --format html
 ```
 
 ## 🎯 Common Use Cases
 
 ### 1. Check Blog Post for Spelling Errors
 ```bash
-python main.py --url https://your-blog.com/post --agents spell_checker
+pipenv run python main.py --url https://your-blog.com/post --agents spell_checker
 ```
 
 ### 2. Validate Landing Page UI
 ```bash
-python main.py --url https://your-landing-page.com --agents visual_qa --format html
+pipenv run python main.py --url https://your-landing-page.com --agents visual_qa --format html
 ```
 
 ### 3. Full Site Audit
@@ -98,13 +93,13 @@ targets:
 ```
 
 ```bash
-python main.py --config audit.yaml --format html --output reports/audit/
+pipenv run python main.py --config audit.yaml --format html --output reports/audit/
 ```
 
 ### 4. CI/CD Integration
 ```bash
 # Exit with error code if issues found
-python main.py --url https://staging.your-site.com --quiet
+pipenv run python main.py --url https://staging.your-site.com --quiet
 if [ $? -eq 0 ]; then
   echo "✓ Validation passed"
 else
@@ -130,17 +125,17 @@ GOOGLE_API_KEY=your_actual_api_key_here
 ### Browser not launching
 ```bash
 # Reinstall Playwright browsers
-playwright install chromium
+pipenv run install-playwright
 ```
 
 ### For more help
 ```bash
-python main.py --help
+pipenv run python main.py --help
 ```
 
 Or enable verbose logging:
 ```bash
-python main.py --url https://example.com -v
+pipenv run python main.py --url https://example.com -v
 ```
 
 ## 📚 Learn More

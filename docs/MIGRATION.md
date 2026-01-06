@@ -17,11 +17,11 @@ pipenv run visual-check
 #### New Way
 ```bash
 # Run both agents
-python main.py --url https://example.com
+pipenv run python main.py --url https://example.com
 
 # Run specific agent
-python main.py --url https://example.com --agents spell_checker
-python main.py --url https://example.com --agents visual_qa
+pipenv run python main.py --url https://example.com --agents spell_checker
+pipenv run python main.py --url https://example.com --agents visual_qa
 ```
 
 ### Configuration Migration
@@ -42,7 +42,7 @@ targets:
 
 Then run:
 ```bash
-python main.py --config config.yaml
+pipenv run python main.py --config config.yaml
 ```
 
 ### Code Migration
@@ -87,7 +87,7 @@ The original agents remain in the project root and continue to work. They will b
 
 #### Pattern 1: Single Site, Multiple Agents
 ```bash
-python main.py --url https://example.com --format html --output reports/
+pipenv run python main.py --url https://example.com --format html --output reports/
 ```
 
 #### Pattern 2: Multiple Sites from Config
@@ -101,7 +101,7 @@ targets:
 ```
 
 ```bash
-python main.py --config multi-sites.yaml
+pipenv run python main.py --config multi-sites.yaml
 ```
 
 #### Pattern 3: Mobile Testing
@@ -123,17 +123,17 @@ targets:
 ```
 
 ```bash
-python main.py --config mobile.yaml --format html
+pipenv run python main.py --config mobile.yaml --format html
 ```
 
 ### Getting Help
 
 Run with `--help` to see all options:
 ```bash
-python main.py --help
+pipenv run python main.py --help
 ```
 
 For verbose output during migration:
 ```bash
-python main.py --url https://example.com -v
+pipenv run python main.py --url https://example.com -v
 ```

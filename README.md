@@ -41,15 +41,13 @@ For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE
 
 ## 🚀 Installation
 
-### Quick Setup with pipenv (Recommended)
-
 1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd agent-validator
 ```
 
-2. Install dependencies:
+2. Install dependencies with pipenv:
 ```bash
 pipenv install
 ```
@@ -64,14 +62,6 @@ pipenv run install-playwright
 cp .env.example .env
 # Edit .env and add your GOOGLE_API_KEY
 ```
-
-### Alternative: Standard pip Installation
-
-```bash
-pip install -r requirements.txt
-playwright install chromium
-```
-
 
 ## ⚙️ Configuration
 
@@ -123,25 +113,25 @@ See [examples/](examples/) for more configuration examples.
 
 ```bash
 # Run all agents on a URL
-python main.py --url https://example.com
+pipenv run python main.py --url https://example.com
 
 # Run specific agent
-python main.py --url https://example.com --agents spell_checker
+pipenv run python main.py --url https://example.com --agents spell_checker
 
 # Run with custom config
-python main.py --config examples/multi_site_check.yaml
+pipenv run python main.py --config examples/multi_site_check.yaml
 
 # Output as HTML
-python main.py --url https://example.com --format html --output reports/
+pipenv run python main.py --url https://example.com --format html --output reports/
 
 # Verbose logging
-python main.py --url https://example.com -v
+pipenv run python main.py --url https://example.com -v
 ```
 
-#### Using pipenv
+#### Using pipenv scripts
 
 ```bash
-# Main CLI
+# Main CLI using validate script
 pipenv run validate --url https://example.com
 
 # With options
@@ -212,28 +202,24 @@ Interactive dashboard with:
 
 Run the test suite:
 ```bash
-# Using pipenv
 pipenv run test
-
-# Or with pytest directly
-pytest tests/
 ```
 
 ## 📚 Examples
 
 ### Multi-Site Validation
 ```bash
-python main.py --config examples/multi_site_check.yaml
+pipenv run python main.py --config examples/multi_site_check.yaml
 ```
 
 ### Mobile Responsive Testing
 ```bash
-python main.py --config examples/mobile_responsive.yaml
+pipenv run python main.py --config examples/mobile_responsive.yaml
 ```
 
 ### Single Agent Quick Check
 ```bash
-python main.py --url https://example.com --agents spell_checker --format text
+pipenv run python main.py --url https://example.com --agents spell_checker --format text
 ```
 
 ## 🛠️ Development
