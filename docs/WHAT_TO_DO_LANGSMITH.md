@@ -10,6 +10,7 @@ You have your LangSmith API key already. Here's exactly what to do:
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=your_actual_api_key_here
 LANGCHAIN_PROJECT=agent-validator
+LANGSMITH_ENDPOINT=langsmith_endpoint
 ```
 
 ### 2. Install the package:
