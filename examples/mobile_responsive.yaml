@@ -1,0 +1,36 @@
+# Example: Mobile responsive testing configuration
+# Usage: python main.py --config examples/mobile_responsive.yaml
+
+agents:
+  visual_qa:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+    viewports:
+      # Common mobile viewports
+      - width: 375
+        height: 667
+        name: "iPhone SE"
+      - width: 414
+        height: 896
+        name: "iPhone 11 Pro Max"
+      - width: 360
+        height: 640
+        name: "Android"
+      # Tablet
+      - width: 768
+        height: 1024
+        name: "iPad"
+      # Desktop
+      - width: 1920
+        height: 1080
+        name: "Desktop"
+
+targets:
+  - url: "https://www.example.com"
+    agents: ["visual_qa"]
+
+output:
+  format: "html"
+  path: "./reports/responsive"
+  timestamp: true

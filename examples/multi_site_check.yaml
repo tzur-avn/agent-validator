@@ -1,0 +1,32 @@
+# Example: Multi-site validation configuration
+# Usage: python main.py --config examples/multi_site_check.yaml
+
+agents:
+  spell_checker:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+  
+  visual_qa:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+    viewports:
+      - width: 1920
+        height: 1080
+        name: "Desktop"
+
+targets:
+  - url: "https://www.google.com"
+    agents: ["spell_checker", "visual_qa"]
+  
+  - url: "https://www.github.com"
+    agents: ["spell_checker", "visual_qa"]
+  
+  - url: "https://www.stackoverflow.com"
+    agents: ["spell_checker"]
+
+output:
+  format: "html"
+  path: "./reports/multi-site"
+  timestamp: true

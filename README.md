@@ -1,37 +1,47 @@
 # AI Agent Web Validator
 
-An intelligent web scraping and validation agent that uses AI to analyze website content for spelling errors, grammar issues, and unclear phrasing. Built with LangGraph, Playwright, and Google's Gemini AI.
+A comprehensive, AI-powered web validation framework that automatically detects spelling errors, grammar issues, and visual/UI problems on websites. Built with a modular architecture using LangGraph, Playwright, and Google's Gemini AI.
 
-## Features
+## ✨ Features
 
-- **Real Browser Scraping**: Uses Playwright to scrape content from live websites, including JavaScript-rendered content
-- **AI-Powered Analysis**: Leverages Google's Gemini 2.5 Flash model to intelligently detect spelling and grammar errors
-- **Multi-Language Support**: Properly handles bidirectional text (Hebrew, Arabic, etc.) using the python-bidi library
-- **Agent Workflow**: Implements a multi-node agent workflow using LangGraph for structured processing
+### Dual Agent System
+- **Spell Checker Agent**: Detects spelling errors, grammar issues, and unclear phrasing in text content
+- **Visual QA Agent**: Identifies layout issues, accessibility problems, responsive design flaws, and UI inconsistencies
 
-## Requirements
+### Advanced Capabilities
+- **Real Browser Automation**: Uses Playwright for accurate rendering of JavaScript-heavy sites
+- **AI-Powered Analysis**: Leverages Google's Gemini 2.5 Flash with vision capabilities
+- **Multi-Language Support**: Handles bidirectional text (Hebrew, Arabic, etc.)
+- **Flexible Configuration**: YAML-based config for agents, targets, and output formats
+- **Multiple Output Formats**: Text, JSON, and HTML reports with interactive dashboards
+- **Parallel Execution**: Run multiple agents concurrently for faster validation
+- **Robust Error Handling**: Retry logic with exponential backoff for reliability
+
+## 🏗️ Architecture
+
+The project uses a modular, extensible architecture:
+
+```
+agent-validator/
+├── agents/           # Validation agents (spell_checker, visual_qa)
+├── core/             # Core framework (orchestrator, config, exceptions)
+├── reporters/        # Output formatters (text, JSON, HTML)
+├── utils/            # Utilities (browser, validation, text processing)
+├── tests/            # Unit tests
+├── examples/         # Example configurations
+└── main.py           # CLI entry point
+```
+
+For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## 📋 Requirements
 
 - Python 3.10+
 - Google AI API Key (free tier available at [Google AI Studio](https://makersuite.google.com/app/apikey))
 
-## Installation
+## 🚀 Installation
 
-### Quick Setup (Recommended)
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd agent-validator
-```
-
-2. Run the setup script:
-```bash
-./setup.sh
-```
-
-This script will install pipenv, create the virtual environment, install all dependencies, and set up Playwright browsers.
-
-### Manual Setup with pipenv
+### Quick Setup with pipenv (Recommended)
 
 1. Clone the repository:
 ```bash
@@ -39,105 +49,244 @@ git clone <repository-url>
 cd agent-validator
 ```
 
-2. Install pipenv if you haven't already:
-```bash
-pip install pipenv
-```
-
-3. Install dependencies and create virtual environment:
+2. Install dependencies:
 ```bash
 pipenv install
 ```
 
-4. Install Playwright browsers:
+3. Install Playwright browsers:
 ```bash
 pipenv run install-playwright
 ```
 
-### Alternative: Manual Installation
-
-1. Clone the repository:
+4. Set up your API key:
 ```bash
-git clone <repository-url>
-cd agent-validator
+cp .env.example .env
+# Edit .env and add your GOOGLE_API_KEY
 ```
 
-2. Create a virtual environment and activate it:
-```bash
-python -m venv .venv
-.venv\Scripts\activate  # On Windows
-# source .venv/bin/activate  # On Linux/Mac
-```
+### Alternative: Standard pip Installation
 
-3. Install dependencies:
 ```bash
-pip install playwright langchain-google-genai langgraph python-dotenv python-bidi
-```
-
-4. Install Playwright browser:
-```bash
+pip install -r requirements.txt
 playwright install chromium
 ```
 
-## Configuration
 
-Create a `.env` file in the project root with your Google API key:
+## ⚙️ Configuration
 
-```env
+### Environment Variables
+
+Create a `.env` file with your API key:
+```bash
 GOOGLE_API_KEY=your_api_key_here
 ```
 
-Get your free API key from [Google AI Studio](https://makersuite.google.com/app/apikey).
+### Configuration File
 
-## Usage
+Create or edit `config.yaml` to customize agents and targets:
 
-1. Edit the `url_to_test` variable in `agent_web_speller.py` to specify the website you want to analyze:
+```yaml
+agents:
+  spell_checker:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+    max_text_length: 10000
+  
+  visual_qa:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+    viewports:
+      - width: 1920
+        height: 1080
+        name: "Desktop"
+
+targets:
+  - url: "https://example.com"
+    agents: ["spell_checker", "visual_qa"]
+
+output:
+  format: "html"  # Options: text, json, html
+  path: "./reports"
+  timestamp: true
+```
+
+See [examples/](examples/) for more configuration examples.
+
+## 🎯 Usage
+
+### Command Line Interface
+
+#### Basic Usage
+
+```bash
+# Run all agents on a URL
+python main.py --url https://example.com
+
+# Run specific agent
+python main.py --url https://example.com --agents spell_checker
+
+# Run with custom config
+python main.py --config examples/multi_site_check.yaml
+
+# Output as HTML
+python main.py --url https://example.com --format html --output reports/
+
+# Verbose logging
+python main.py --url https://example.com -v
+```
+
+#### Using pipenv
+
+```bash
+# Main CLI
+pipenv run validate --url https://example.com
+
+# With options
+pipenv run validate --url https://example.com --format html --output reports/
+```
+
+### Programmatic Usage
+
 ```python
-url_to_test = "https://www.example.com"
+from core.config_loader import ConfigLoader
+from core.orchestrator import Orchestrator
+from reporters import get_reporter
+
+# Load configuration
+config = ConfigLoader.load("config.yaml")
+
+# Create orchestrator
+orchestrator = Orchestrator(config._config)
+
+# Run agents on a URL
+results = orchestrator.run_multiple_agents(
+    url="https://example.com",
+    agent_names=["spell_checker", "visual_qa"]
+)
+
+# Generate report
+reporter = get_reporter("html", timestamp=True)
+report = reporter.format_report(results)
+print(report)
 ```
 
-2. Run the scripts using pipenv:
+### Running Legacy Agents (Backward Compatibility)
 
-For spell checking:
+The original standalone agents are still available:
+
 ```bash
-pipenv run spell-check
+pipenv run spell-check   # Run spell checker only
+pipenv run visual-check  # Run visual QA only
 ```
 
-For visual issue analysis:
+## 📊 Output Formats
+
+### Text Output
+Console-friendly plain text reports.
+
+### JSON Output
+Machine-readable format for integration with other tools:
+```json
+{
+  "timestamp": "2026-01-05 10:30:00",
+  "results": [...],
+  "summary": {
+    "total_validations": 2,
+    "passed": 1,
+    "failed": 1
+  }
+}
+```
+
+### HTML Output
+Interactive dashboard with:
+- Summary statistics
+- Severity-based filtering
+- Color-coded issues
+- Responsive design
+
+## 🧪 Testing
+
+Run the test suite:
 ```bash
-pipenv run visual-check
+# Using pipenv
+pipenv run test
+
+# Or with pytest directly
+pytest tests/
 ```
 
-Or run directly with pipenv shell:
+## 📚 Examples
+
+### Multi-Site Validation
 ```bash
-pipenv shell
-python agent_web_speller.py
-python agent_web_visual_issues.py
+python main.py --config examples/multi_site_check.yaml
 ```
 
-3. The agent will:
-   - Launch a headless browser
-   - Scrape the website content
-   - Analyze the text using Gemini AI
-   - Generate a detailed report of any errors found
+### Mobile Responsive Testing
+```bash
+python main.py --config examples/mobile_responsive.yaml
+```
 
-## How It Works
+### Single Agent Quick Check
+```bash
+python main.py --url https://example.com --agents spell_checker --format text
+```
 
-The application uses a three-node agent workflow:
+## 🛠️ Development
 
-1. **Scraper Node** (`scrape_web_node`):
-   - Launches a Chromium browser using Playwright
-   - Navigates to the target URL
-   - Extracts visible text from the page
-   - Returns cleaned text (up to 10,000 characters)
+### Project Structure
+- `agents/` - Validation agents
+- `core/` - Framework core (orchestrator, config, exceptions)
+- `reporters/` - Output formatters
+- `utils/` - Helper utilities
+- `tests/` - Unit tests
+- `examples/` - Example configurations
 
-2. **Analyzer Node** (`analyze_text_node`):
-   - Sends the scraped text to Google's Gemini 2.5 Flash model
-   - Uses a specialized prompt to identify spelling, grammar, and phrasing issues
-   - Parses the AI response into structured error objects
+### Adding a New Agent
 
-3. **Reporter Node** (`generate_report_node`):
-   - Formats the findings into a human-readable report
+1. Create agent class in `agents/`:
+```python
+from agents.base_agent import BaseAgent
+
+class MyAgent(BaseAgent):
+    def build_workflow(self):
+        # Define your workflow
+        pass
+```
+
+2. Register in orchestrator:
+```python
+# In core/orchestrator.py
+AGENT_REGISTRY = {
+    "my_agent": MyAgent,
+}
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+
+[Your License Here]
+
+## 🔗 Links
+
+- [Google AI Studio](https://makersuite.google.com/app/apikey) - Get your API key
+- [Playwright Documentation](https://playwright.dev/python/) - Browser automation
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/) - Agent framework
+
+## 📧 Support
+
+For issues, questions, or suggestions, please open an issue on GitHub.
+
+---
+
+Built with ❤️ using LangGraph, Playwright, and Google Gemini AI
    - Applies bidirectional text reordering for proper display of Hebrew/Arabic text
    - Returns success or failure status with detailed error information
 

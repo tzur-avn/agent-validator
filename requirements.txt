@@ -1,0 +1,15 @@
+# Agent Validator Requirements
+
+# Core dependencies
+python-dotenv>=1.0.0
+python-bidi>=0.4.2
+playwright>=1.40.0
+langchain-google-genai>=1.0.0
+langgraph>=0.1.0
+google-generativeai>=0.3.0
+pyyaml>=6.0
+langchain-core>=0.1.0
+
+# Dev dependencies
+pytest>=7.4.0
+pytest-mock>=3.12.0

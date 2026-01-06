@@ -1,0 +1,53 @@
+# Agent Validator Configuration
+
+# Agent configurations
+agents:
+  spell_checker:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+    max_text_length: 10000
+    wait_time: 2000  # milliseconds to wait for dynamic content
+  
+  visual_qa:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+    viewports:
+      - width: 1920
+        height: 1080
+        name: "Desktop"
+      # Uncomment for additional viewports
+      # - width: 1366
+      #   height: 768
+      #   name: "Laptop"
+      # - width: 375
+      #   height: 667
+      #   name: "Mobile"
+    wait_time: 5000  # milliseconds to wait before screenshot
+
+# Target URLs to validate
+targets:
+  - url: "https://www.example.com"
+    agents: ["spell_checker", "visual_qa"]
+  # Add more targets as needed
+  # - url: "https://www.another-site.com"
+  #   agents: ["spell_checker"]
+
+# Output configuration
+output:
+  format: "text"  # Options: text, json, html, markdown
+  path: "./reports"
+  timestamp: true
+  verbose: false
+
+# Browser configuration
+browser:
+  headless: true
+  timeout: 60000  # milliseconds
+
+# Retry configuration
+retry:
+  max_retries: 3
+  initial_delay: 1.0
+  exponential_base: 2.0

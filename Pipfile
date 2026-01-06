@@ -1,17 +1,27 @@
 [packages]
 python-dotenv = "*"
 python-bidi = "*"
-playwright = "*"
 langchain-google-genai = "*"
 langgraph = "*"
 google-generativeai = "*"
+pyyaml = "*"
+langchain-core = "*"
+playwright = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-mock = "*"
 
 [requires]
 python_version = "3.13"
 
 [scripts]
+# New main CLI
+validate = "python main.py"
+# Legacy agents (for backward compatibility)
 visual-check = "python agent_web_visual_issues.py"
 spell-check = "python agent_web_speller.py"
+# Setup
 install-playwright = "playwright install"
+# Testing
+test = "pytest tests/"
