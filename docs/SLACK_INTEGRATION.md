@@ -1,0 +1,398 @@
+# Slack Integration Guide
+
+This guide will help you set up and use the Agent Validator Slack bot.
+
+## Overview
+
+The Agent Validator Slack bot allows you to interact with validation agents directly from Slack. You can:
+
+- Talk to agents using natural language
+- Request validations on any URL
+- Get formatted reports right in Slack
+- Have interactive conversations where the bot asks for missing information
+
+## Prerequisites
+
+- A Slack workspace where you can install apps
+- Python 3.13+ with pipenv
+- Google Gemini API key (for running agents)
+- Agent Validator installed and configured
+
+## Setup Instructions
+
+### 1. Create a Slack App
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps)
+2. Click **"Create New App"** → **"From scratch"**
+3. Enter app name: `Agent Validator Bot`
+4. Select your workspace
+5. Click **"Create App"**
+
+### 2. Configure Bot Permissions
+
+1. In your app settings, go to **"OAuth & Permissions"**
+2. Scroll to **"Scopes"** → **"Bot Token Scopes"**
+3. Add the following scopes:
+   - `app_mentions:read` - Read messages that mention your bot
+   - `chat:write` - Send messages as the bot
+   - `channels:history` - View messages in public channels
+   - `groups:history` - View messages in private channels
+   - `im:history` - View messages in direct messages
+   - `mpim:history` - View messages in group DMs
+   - `channels:read` - View basic channel information
+   - `groups:read` - View basic private channel information
+   - `im:read` - View basic DM information
+   - `mpim:read` - View basic group DM information
+
+### 3. Enable Socket Mode
+
+1. Go to **"Socket Mode"** in the sidebar
+2. Enable Socket Mode
+3. Enter a token name (e.g., "Agent Validator Token")
+4. Click **"Generate"**
+5. **Copy the App-Level Token** (starts with `xapp-`) - you'll need this later
+
+### 4. Enable Event Subscriptions
+
+1. Go to **"Event Subscriptions"** in the sidebar
+2. Enable Events
+3. Subscribe to bot events:
+   - `app_mention` - When someone mentions your bot
+   - `message.channels` - Messages in channels
+   - `message.groups` - Messages in private channels
+   - `message.im` - Direct messages
+   - `message.mpim` - Group direct messages
+
+### 5. Install the App to Your Workspace
+
+1. Go to **"OAuth & Permissions"**
+2. Click **"Install to Workspace"**
+3. Review permissions and click **"Allow"**
+4. **Copy the Bot User OAuth Token** (starts with `xoxb-`) - you'll need this later
+
+### 6. Configure Environment Variables
+
+Create a `.env` file in your project root (or add to existing):
+
+```bash
+# Google Gemini API (for agents)
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Slack tokens
+SLACK_BOT_TOKEN=xoxb-your-bot-token-here
+SLACK_APP_TOKEN=xapp-your-app-token-here
+```
+
+**Security Note:** Never commit your `.env` file to version control!
+
+### 7. Install Dependencies
+
+```bash
+pipenv install
+```
+
+This will install the Slack SDK dependencies (`slack-bolt` and `slack-sdk`).
+
+### 8. Run the Slack Bot
+
+```bash
+pipenv run slack-bot
+```
+
+Or with verbose logging:
+
+```bash
+pipenv run slack-bot -v
+```
+
+Or with custom config:
+
+```bash
+pipenv run slack-bot --config examples/config.example.yaml
+```
+
+You should see output like:
+
+```
+INFO - Starting Agent Validator Slack Bot
+INFO - Loaded configuration from config.yaml
+INFO - SlackBot initialized successfully
+INFO - Connecting to Slack...
+⚡️ Bolt app is running!
+```
+
+## Using the Bot
+
+### Invite the Bot to Channels
+
+Before using the bot in a channel:
+
+1. Go to the channel in Slack
+2. Type `/invite @Agent Validator Bot`
+3. The bot will join the channel
+
+### Commands and Interactions
+
+#### Get Help
+
+```
+@Agent Validator Bot help
+```
+
+or in a DM:
+
+```
+help
+```
+
+#### List Available Agents
+
+```
+@Agent Validator Bot list agents
+```
+
+#### Run Spell Checker
+
+Provide URL directly:
+
+```
+@Agent Validator Bot check spelling on https://example.com
+```
+
+Or let the bot ask for the URL:
+
+```
+@Agent Validator Bot run spell checker
+```
+
+The bot will respond:
+```
+🔗 Please provide the URL you want to validate with the spell_checker agent.
+```
+
+Then you provide:
+```
+https://example.com
+```
+
+#### Run Visual QA
+
+```
+@Agent Validator Bot run visual qa on https://example.com
+```
+
+Or with natural language:
+
+```
+@Agent Validator Bot check https://example.com for visual issues
+```
+
+### Example Conversations
+
+#### Spell Check Example
+
+**You:** `@Agent Validator Bot check grammar on https://myblog.com`
+
+**Bot:** 
+```
+🚀 Starting spell_checker validation for: https://myblog.com
+```
+
+After processing:
+
+**Bot:**
+```
+✍️ Spell Checker Report
+
+URL: https://myblog.com
+
+Found 3 issue(s):
+
+1. `teh` → `the`
+   Context: This is teh main page...
+
+2. `recieve` → `receive`
+   Context: You will recieve updates...
+
+3. `occured` → `occurred`
+   Context: An error occured...
+
+Report generated by Agent Validator
+```
+
+#### Visual QA Example
+
+**You:** `@Agent Validator Bot visual check https://mysite.com`
+
+**Bot:**
+```
+🚀 Starting visual_qa validation for: https://mysite.com
+```
+
+**Bot:**
+```
+👁️ Visual QA Report
+
+URL: https://mysite.com
+
+Found 2 visual issue(s):
+
+🔴 1. Button text is cut off on mobile viewport
+   Element: `.submit-button`
+
+🟡 2. Image aspect ratio distorted
+   Element: `.hero-image`
+
+Report generated by Agent Validator
+```
+
+## Configuration
+
+### Custom Agent Settings
+
+Edit `config.yaml` to customize agent behavior:
+
+```yaml
+agents:
+  spell_checker:
+    enabled: true
+    model: "gemini-2.5-flash"
+    temperature: 0
+    max_text_length: 10000
+  
+  visual_qa:
+    enabled: true
+    model: "gemini-2.5-flash"
+    viewports:
+      - width: 1920
+        height: 1080
+        name: "Desktop"
+      - width: 375
+        height: 667
+        name: "Mobile"
+```
+
+### Slack Settings
+
+In `config.yaml`:
+
+```yaml
+slack:
+  enabled: true
+  conversation_timeout_minutes: 30  # Auto-expire conversations after 30 minutes
+```
+
+## Troubleshooting
+
+### Bot Doesn't Respond
+
+1. Check bot is running: `pipenv run slack-bot -v`
+2. Verify environment variables are set correctly
+3. Make sure bot is invited to the channel
+4. Check Socket Mode is enabled in Slack app settings
+5. Review logs for errors
+
+### "Invalid URL" Error
+
+The bot requires valid URLs starting with `http://` or `https://`. Make sure your URL is complete:
+
+✅ Good: `https://example.com`  
+❌ Bad: `example.com`
+
+### Agent Fails
+
+1. Check your `GOOGLE_API_KEY` is valid
+2. Verify Playwright is installed: `pipenv run install-playwright`
+3. Check agent configuration in `config.yaml`
+4. Review detailed logs with `-v` flag
+
+### Conversation Gets Stuck
+
+Conversations auto-expire after 30 minutes (configurable). To manually reset, just start a new request without referencing the old one.
+
+## Advanced Usage
+
+### Running in Production
+
+For production deployment:
+
+1. **Use a process manager** like `systemd`, `supervisor`, or `pm2`
+2. **Set up logging** to a file:
+   ```bash
+   pipenv run slack-bot --log-file /var/log/agent-validator-slack.log
+   ```
+3. **Monitor the process** and set up auto-restart on failure
+4. **Secure your tokens** using a secrets manager (not `.env` files)
+
+### Example systemd Service
+
+Create `/etc/systemd/system/agent-validator-slack.service`:
+
+```ini
+[Unit]
+Description=Agent Validator Slack Bot
+After=network.target
+
+[Service]
+Type=simple
+User=youruser
+WorkingDirectory=/path/to/agent-validator
+Environment=SLACK_BOT_TOKEN=xoxb-...
+Environment=SLACK_APP_TOKEN=xapp-...
+Environment=GOOGLE_API_KEY=...
+ExecStart=/usr/bin/pipenv run slack-bot --log-file /var/log/agent-validator-slack.log
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl enable agent-validator-slack
+sudo systemctl start agent-validator-slack
+sudo systemctl status agent-validator-slack
+```
+
+## Security Considerations
+
+1. **Never commit tokens** to version control
+2. **Use environment variables** or a secrets manager
+3. **Restrict bot permissions** to only what's needed
+4. **Monitor bot usage** and set up alerts for unusual activity
+5. **Validate all user input** before processing (already handled by the bot)
+
+## Support
+
+For issues or questions:
+
+1. Check the [main README](../README.md)
+2. Review [Architecture docs](ARCHITECTURE.md)
+3. Check logs with verbose mode: `pipenv run slack-bot -v`
+4. Review Slack app event logs in the Slack API console
+
+## Features Overview
+
+| Feature | Status |
+|---------|--------|
+| Direct messaging | ✅ Supported |
+| Channel mentions | ✅ Supported |
+| Multi-turn conversations | ✅ Supported |
+| Spell checking | ✅ Supported |
+| Visual QA | ✅ Supported |
+| Custom agents | 🔄 Extensible |
+| Rich formatting | ✅ Supported |
+| Error handling | ✅ Supported |
+| Conversation timeout | ✅ Configurable |
+| Help commands | ✅ Supported |
+
+## Next Steps
+
+- Add more agents by extending the base agent class
+- Customize report formatting in `integrations/slack_formatter.py`
+- Add conversation branching for complex workflows
+- Implement user preferences and settings
+- Add scheduled validations
+- Create Slack slash commands for quick actions

@@ -51,3 +51,19 @@ retry:
   max_retries: 3
   initial_delay: 1.0
   exponential_base: 2.0
+
+# Slack integration configuration
+slack:
+  enabled: false  # Set to true to enable Slack integration
+  # Tokens should be set in environment variables:
+  # SLACK_BOT_TOKEN - Bot User OAuth Token (xoxb-...)
+  # SLACK_APP_TOKEN - App-Level Token (xapp-...)
+  conversation_timeout_minutes: 30  # How long to keep conversation state
+
+# LangSmith integration configuration
+langsmith:
+  enabled: false  # Set to true to enable LangSmith tracing
+  # API key and project should be set in environment variables:
+  # LANGCHAIN_TRACING_V2=true
+  # LANGCHAIN_API_KEY=your_api_key
+  # LANGCHAIN_PROJECT=agent-validator

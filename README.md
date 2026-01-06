@@ -16,6 +16,8 @@ A comprehensive, AI-powered web validation framework that automatically detects 
 - **Multiple Output Formats**: Text, JSON, and HTML reports with interactive dashboards
 - **Parallel Execution**: Run multiple agents concurrently for faster validation
 - **Robust Error Handling**: Retry logic with exponential backoff for reliability
+- **Slack Integration**: Interact with agents directly from Slack (see [Slack Integration Guide](docs/SLACK_INTEGRATION.md))
+- **LangSmith Observability**: Monitor and debug agent runs with LangSmith integration (see [LangSmith Guide](docs/LANGSMITH_INTEGRATION.md))
 
 ## 🏗️ Architecture
 
@@ -170,6 +172,31 @@ The original standalone agents are still available:
 ```bash
 pipenv run spell-check   # Run spell checker only
 pipenv run visual-check  # Run visual QA only
+```
+
+### Slack Integration
+
+Run validation agents directly from Slack! See the [Slack Integration Guide](docs/SLACK_INTEGRATION.md) for setup instructions.
+
+```bash
+# Start the Slack bot
+pipenv run slack-bot
+
+# With verbose logging
+pipenv run slack-bot -v
+```
+
+**Key Features:**
+- Chat with agents directly in Slack
+- Interactive conversations to gather required arguments
+- Formatted reports delivered to Slack channels
+- Support for both direct messages and channel mentions
+
+**Example Slack conversation:**
+```
+You: @Agent Validator Bot check spelling on https://example.com
+Bot: 🚀 Starting spell_checker validation for: https://example.com
+Bot: [Formatted report with spelling errors]
 ```
 
 ## 📊 Output Formats
