@@ -2,6 +2,7 @@
 
 import operator
 import logging
+from pathlib import Path
 from typing import Annotated, List, TypedDict, Dict, Any
 
 from langgraph.graph import StateGraph, END
@@ -28,6 +29,8 @@ class VisualQAState(TypedDict):
 class VisualQAAgent(BaseAgent):
     """Agent for detecting visual and UI/UX issues on web pages."""
 
+    PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+
     def __init__(
         self,
         model: str = "gemini-2.5-flash",
@@ -53,6 +56,12 @@ class VisualQAAgent(BaseAgent):
             viewport_width, viewport_height
         )
         self.wait_time = wait_time
+        self._prompt_template = self._load_prompt_template()
+
+    def _load_prompt_template(self) -> str:
+        """Load the prompt template from markdown file."""
+        prompt_file = self.PROMPTS_DIR / "visual_qa.md"
+        return prompt_file.read_text(encoding="utf-8")
 
     def get_state_class(self) -> type:
         """Get the state class for this agent."""
@@ -105,30 +114,7 @@ class VisualQAAgent(BaseAgent):
             content=[
                 {
                     "type": "text",
-                    "text": """You are a UI/UX expert and QA specialist. Analyze this website screenshot for visual issues.
-
-Check for:
-1. **Layout Issues**: Overlapping elements, misaligned content, broken grids
-2. **Readability**: Poor color contrast, text too small, hard-to-read fonts
-3. **Responsive Design**: Elements cut off, horizontal scrolling issues
-4. **Visual Hierarchy**: Confusing layouts, poor spacing, cluttered UI
-5. **Accessibility**: Missing alt text indicators, poor focus states, contrast issues
-6. **Broken UI**: Missing images (broken image icons), distorted graphics
-7. **Consistency**: Inconsistent spacing, mixed font sizes, mismatched styles
-
-Return ONLY a JSON list of issues found:
-[
-  {
-    "type": "layout|readability|responsive|hierarchy|accessibility|broken|consistency",
-    "severity": "critical|high|medium|low",
-    "location": "describe where on the page",
-    "issue": "brief description of the problem",
-    "recommendation": "suggested fix"
-  }
-]
-
-If no issues are found, return an empty array: []
-""",
+                    "text": self._prompt_template,
                 },
                 {
                     "type": "image_url",

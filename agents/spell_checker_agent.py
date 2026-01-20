@@ -2,6 +2,7 @@
 
 import operator
 import logging
+from pathlib import Path
 from typing import Annotated, List, TypedDict, Dict, Any
 
 from langgraph.graph import StateGraph, END
@@ -26,6 +27,8 @@ class SpellCheckerState(TypedDict):
 class SpellCheckerAgent(BaseAgent):
     """Agent for detecting spelling and grammar errors on web pages."""
 
+    PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
+
     def __init__(
         self,
         model: str = "gemini-2.5-flash",
@@ -47,6 +50,12 @@ class SpellCheckerAgent(BaseAgent):
         super().__init__(model=model, temperature=temperature, **kwargs)
         self.max_text_length = max_text_length
         self.wait_time = wait_time
+        self._prompt_template = self._load_prompt_template()
+
+    def _load_prompt_template(self) -> str:
+        """Load the prompt template from markdown file."""
+        prompt_file = self.PROMPTS_DIR / "spell_checker.md"
+        return prompt_file.read_text(encoding="utf-8")
 
     def get_state_class(self) -> type:
         """Get the state class for this agent."""
@@ -75,18 +84,7 @@ class SpellCheckerAgent(BaseAgent):
         """Analyze text for spelling and grammar errors."""
         logger.info(f"Analyzing {len(state['raw_text'])} characters")
 
-        prompt = f"""
-You are a QA expert for the English language. Scan the following text extracted from a website.
-Identify spelling errors, grammar issues, or unclear phrasing.
-
-Return only a JSON list:
-[
-  {{"original": "the source", "correction": "the correction", "context": "the full sentence where the error was found"}}
-]
-
-Text to check:
-{state['raw_text']}
-"""
+        prompt = self._prompt_template.replace("{text}", state["raw_text"])
 
         response = self.invoke_llm(prompt)
         found_errors = self.parse_json_response(response)
