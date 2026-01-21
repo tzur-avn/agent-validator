@@ -44,7 +44,9 @@ Examples:
     # Input options
     input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument("--url", type=str, help="URL to validate")
-    input_group.add_argument("--config", type=str, help="Path to configuration file (default: config.yaml)")
+    input_group.add_argument(
+        "--config", type=str, help="Path to configuration file (default: config.yaml)"
+    )
 
     # Agent selection
     parser.add_argument(
@@ -144,8 +146,13 @@ def main():
                 logger.info("Loading configuration from config.yaml")
                 config = ConfigLoader.load("config.yaml")
             else:
-                logger.error("No URL or config file specified, and config.yaml not found")
-                print("\n✗ Error: Please specify --url or create a config.yaml file", file=sys.stderr)
+                logger.error(
+                    "No URL or config file specified, and config.yaml not found"
+                )
+                print(
+                    "\n✗ Error: Please specify --url or create a config.yaml file",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
 
         # Create orchestrator
