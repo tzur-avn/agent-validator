@@ -19,9 +19,28 @@ Return ONLY a JSON list of issues found:
     "severity": "critical|high|medium|low",
     "location": "describe where on the page",
     "issue": "brief description of the problem",
-    "recommendation": "suggested fix"
+    "recommendation": "suggested fix",
+    "selector": "CSS selector for the problematic element (if identifiable)",
+    "coordinates": {
+      "x": 0,
+      "y": 0,
+      "width": 100,
+      "height": 100
+    }
   }
 ]
 ```
 
+For the coordinates field:
+- Provide approximate pixel coordinates of the issue relative to the screenshot
+- x, y are the top-left position of the problematic area
+- width, height define the area size
+- If you cannot determine exact coordinates, estimate based on visual position
+
+For the selector field:
+- If the element is identifiable (button, modal, specific text), provide a CSS selector
+- Examples: "button.submit", "#modal-dialog", ".error-message", etc.
+- If no specific selector can be identified, use null
+
 If no issues are found, return an empty array: []
+

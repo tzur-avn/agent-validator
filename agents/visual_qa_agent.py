@@ -24,6 +24,7 @@ class VisualQAState(TypedDict):
     viewport_height: int
     issues: Annotated[List[dict], operator.add]
     report: str
+    element_screenshots: Dict[int, str]  # index -> base64 screenshot
 
 
 class VisualQAAgent(BaseAgent):
@@ -89,6 +90,7 @@ class VisualQAAgent(BaseAgent):
             "viewport_height": viewport_height,
             "issues": [],
             "report": "",
+            "element_screenshots": {},
         }
 
     def capture_visual_node(self, state: VisualQAState) -> Dict[str, str]:
@@ -147,6 +149,75 @@ class VisualQAAgent(BaseAgent):
         logger.info(f"Found {len(found_issues)} potential issues")
         return {"issues": found_issues}
 
+    def capture_element_screenshots_node(
+        self, state: VisualQAState
+    ) -> Dict[str, Dict[int, str]]:
+        """Capture screenshots of specific issue elements/regions."""
+        if not state["issues"]:
+            logger.debug("No issues to capture screenshots for")
+            return {"element_screenshots": {}}
+
+        logger.info(f"Capturing screenshots for {len(state['issues'])} issues")
+        self._update_progress("Capturing element screenshots", advance=1)
+
+        element_screenshots = {}
+
+        with BrowserSession(
+            viewport={
+                "width": state["viewport_width"],
+                "height": state["viewport_height"],
+            }
+        ) as browser:
+            browser.navigate(state["url"])
+            browser.page.wait_for_timeout(self.wait_time)
+
+            for idx, issue in enumerate(state["issues"]):
+                try:
+                    # Try selector first if available
+                    selector = issue.get("selector")
+                    if selector and selector.strip() and selector != "null":
+                        screenshot_b64 = browser.take_element_screenshot(
+                            selector=selector
+                        )
+                        if screenshot_b64:
+                            element_screenshots[idx] = screenshot_b64
+                            logger.debug(
+                                f"Captured screenshot for issue {idx} using selector"
+                            )
+                            continue
+
+                    # Fall back to coordinates if available
+                    coordinates = issue.get("coordinates")
+                    if coordinates and isinstance(coordinates, dict):
+                        x = coordinates.get("x", 0)
+                        y = coordinates.get("y", 0)
+                        width = coordinates.get("width", 0)
+                        height = coordinates.get("height", 0)
+
+                        if width > 0 and height > 0:
+                            clip_region = {
+                                "x": int(x),
+                                "y": int(y),
+                                "width": int(width),
+                                "height": int(height),
+                            }
+                            screenshot_b64 = browser.take_element_screenshot(
+                                clip_region=clip_region
+                            )
+                            if screenshot_b64:
+                                element_screenshots[idx] = screenshot_b64
+                                logger.debug(
+                                    f"Captured screenshot for issue {idx} using coordinates"
+                                )
+
+                except Exception as e:
+                    logger.warning(f"Failed to capture screenshot for issue {idx}: {e}")
+
+        logger.info(
+            f"Captured {len(element_screenshots)} element screenshots out of {len(state['issues'])} issues"
+        )
+        return {"element_screenshots": element_screenshots}
+
     def generate_report_node(self, state: VisualQAState) -> Dict[str, str]:
         """Generate detailed visual QA report."""
         logger.debug("Generating visual QA report")
@@ -202,11 +273,13 @@ class VisualQAAgent(BaseAgent):
 
         workflow.add_node("capture", self.capture_visual_node)
         workflow.add_node("analyzer", self.analyze_visual_node)
+        workflow.add_node("capture_elements", self.capture_element_screenshots_node)
         workflow.add_node("reporter", self.generate_report_node)
 
         workflow.set_entry_point("capture")
         workflow.add_edge("capture", "analyzer")
-        workflow.add_edge("analyzer", "reporter")
+        workflow.add_edge("analyzer", "capture_elements")
+        workflow.add_edge("capture_elements", "reporter")
         workflow.add_edge("reporter", END)
 
         return workflow

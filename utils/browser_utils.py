@@ -124,6 +124,47 @@ class BrowserSession:
         except Exception as e:
             raise BrowserError(f"Failed to take screenshot: {e}")
 
+    def take_element_screenshot(
+        self, selector: str = None, clip_region: Dict[str, int] = None
+    ) -> Optional[str]:
+        """
+        Take a screenshot of a specific element or region.
+
+        Args:
+            selector: CSS selector for element to screenshot
+            clip_region: Dict with x, y, width, height for clipping region
+
+        Returns:
+            Base64-encoded screenshot or None if element not found
+        """
+        if not self.page:
+            raise BrowserError("Browser session not initialized")
+
+        try:
+            if selector:
+                # Screenshot specific element
+                element = self.page.query_selector(selector)
+                if element:
+                    screenshot_bytes = element.screenshot()
+                    screenshot_b64 = base64.b64encode(screenshot_bytes).decode("utf-8")
+                    logger.debug(f"Element screenshot captured for {selector}")
+                    return screenshot_b64
+                else:
+                    logger.warning(f"Element not found: {selector}")
+                    return None
+            elif clip_region:
+                # Screenshot specific region
+                screenshot_bytes = self.page.screenshot(clip=clip_region)
+                screenshot_b64 = base64.b64encode(screenshot_bytes).decode("utf-8")
+                logger.debug(f"Region screenshot captured")
+                return screenshot_b64
+            else:
+                logger.warning("No selector or clip region provided")
+                return None
+        except Exception as e:
+            logger.warning(f"Failed to take element screenshot: {e}")
+            return None
+
     def get_viewport_size(self) -> Dict[str, int]:
         """Get current viewport size."""
         return self.viewport.copy()

@@ -145,6 +145,7 @@ class Orchestrator:
                 "report": result.get("report", ""),
                 "errors": result.get("errors", []),
                 "issues": result.get("issues", []),
+                "element_screenshots": result.get("element_screenshots", {}),
                 "raw_result": result,
             }
 

@@ -199,7 +199,10 @@ class HTMLReporter(BaseReporter):
             html += self._format_spelling_errors_html(result["errors"])
 
         if result.get("issues"):
-            html += self._format_visual_issues_html(result["issues"])
+            element_screenshots = result.get("element_screenshots", {})
+            html += self._format_visual_issues_html(
+                result["issues"], element_screenshots
+            )
 
         html += "    </div>\n"
         return html
@@ -222,14 +225,19 @@ class HTMLReporter(BaseReporter):
 
         return html
 
-    def _format_visual_issues_html(self, issues: List[Dict[str, Any]]) -> str:
+    def _format_visual_issues_html(
+        self, issues: List[Dict[str, Any]], element_screenshots: Dict[int, str] = None
+    ) -> str:
         """Format visual issues as HTML."""
+        if element_screenshots is None:
+            element_screenshots = {}
+
         # Group by severity
         by_severity = {"critical": [], "high": [], "medium": [], "low": []}
-        for issue in issues:
+        for idx, issue in enumerate(issues):
             severity = issue.get("severity", "low")
             if severity in by_severity:
-                by_severity[severity].append(issue)
+                by_severity[severity].append((idx, issue))
 
         html = f"<h3>Visual Issues ({len(issues)})</h3>\n"
 
@@ -240,7 +248,7 @@ class HTMLReporter(BaseReporter):
 
             html += f'<h4 class="severity-{severity}">{severity.upper()} ({len(issues_list)})</h4>\n'
 
-            for issue in issues_list:
+            for idx, issue in issues_list:
                 issue_type = issue.get("type", "unknown").upper()
                 issue_desc = issue.get("issue", "")
                 location = issue.get("location", "")
@@ -250,7 +258,20 @@ class HTMLReporter(BaseReporter):
         <div class="issue">
             <strong>[{issue_type}]</strong> {issue_desc}<br>
             <strong>Location:</strong> {location}<br>
-            <strong>Fix:</strong> {recommendation}
+            <strong>Fix:</strong> {recommendation}"""
+
+                # Add element screenshot if available
+                if idx in element_screenshots:
+                    screenshot_b64 = element_screenshots[idx]
+                    html += f"""
+            <div style="margin-top: 10px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                <strong>Screenshot:</strong><br>
+                <img src="data:image/png;base64,{screenshot_b64}" 
+                     style="max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 5px; border-radius: 4px;" 
+                     alt="Issue screenshot">
+            </div>"""
+
+                html += """
         </div>
 """
 

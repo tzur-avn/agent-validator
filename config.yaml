@@ -31,7 +31,7 @@ agents:
 # Target URLs to validate
 targets:
   # Simple test site
-  - url: "https://www.example.com"
+  - url: "https://www.bbc.com"
     agents: ["spell_checker", "visual_qa"]
   
   # Test on a real website with more visual elements
