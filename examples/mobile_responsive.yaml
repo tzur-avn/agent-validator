@@ -4,6 +4,7 @@
 agents:
   visual_qa:
     enabled: true
+    provider: "gemini"  # Options: gemini, openai
     model: "gemini-2.5-flash"
     temperature: 0
     viewports:

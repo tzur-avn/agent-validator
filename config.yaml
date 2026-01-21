@@ -4,14 +4,16 @@
 agents:
   spell_checker:
     enabled: true
-    model: "gemini-2.5-flash"
+    provider: "openai"  # Options: gemini, openai
+    model: "gpt-4o"  # OpenAI models: gpt-4o, gpt-4-turbo, gpt-3.5-turbo
     temperature: 0
     max_text_length: 10000
     wait_time: 2000  # milliseconds to wait for dynamic content
   
   visual_qa:
     enabled: true
-    model: "gemini-2.5-flash"
+    provider: "openai"  # Options: gemini, openai
+    model: "gpt-4o"  # OpenAI vision models: gpt-4o, gpt-4-turbo
     temperature: 0
     viewports:
       - width: 1920
@@ -28,15 +30,23 @@ agents:
 
 # Target URLs to validate
 targets:
+  # Simple test site
   - url: "https://www.example.com"
     agents: ["spell_checker", "visual_qa"]
+  
+  # Test on a real website with more visual elements
+  - url: "https://www.bbc.com"
+    agents: ["visual_qa"]
+  
   # Add more targets as needed
-  # - url: "https://www.another-site.com"
-  #   agents: ["spell_checker"]
+  # - url: "https://www.github.com"
+  #   agents: ["visual_qa"]
+  # - url: "https://www.apple.com"
+  #   agents: ["visual_qa"]
 
 # Output configuration
 output:
-  format: "text"  # Options: text, json, html, markdown
+  format: "html"  # Options: text, json, html, markdown
   path: "./reports"
   timestamp: true
   verbose: false

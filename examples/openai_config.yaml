@@ -1,0 +1,41 @@
+# Example configuration using OpenAI models
+# Make sure to set OPENAI_API_KEY in your .env file
+
+agents:
+  spell_checker:
+    enabled: true
+    provider: "openai"
+    model: "gpt-4o"  # or gpt-4-turbo, gpt-3.5-turbo
+    temperature: 0
+    max_text_length: 10000
+    wait_time: 2000
+  
+  visual_qa:
+    enabled: true
+    provider: "openai"
+    model: "gpt-4o"  # Vision-capable model
+    temperature: 0
+    viewports:
+      - width: 1920
+        height: 1080
+        name: "Desktop"
+    wait_time: 5000
+
+targets:
+  - url: "https://www.example.com"
+    agents: ["spell_checker", "visual_qa"]
+
+output:
+  format: "text"
+  path: "./reports"
+  timestamp: true
+  verbose: false
+
+browser:
+  headless: true
+  timeout: 60000
+
+retry:
+  max_attempts: 3
+  initial_delay: 1.0
+  max_delay: 10.0

@@ -108,3 +108,30 @@ def validate_temperature(temp: float) -> float:
         raise ValidationError(f"Temperature must be between 0 and 2, got {temp}")
 
     return float(temp)
+
+
+def validate_provider(provider: str) -> str:
+    """
+    Validate LLM provider name.
+
+    Args:
+        provider: Provider name to validate
+
+    Returns:
+        Validated provider name (lowercase)
+
+    Raises:
+        ValidationError: If provider is invalid
+    """
+    if not provider or not isinstance(provider, str):
+        raise ValidationError("Provider must be a non-empty string")
+
+    provider = provider.lower()
+    valid_providers = ["gemini", "openai"]
+
+    if provider not in valid_providers:
+        raise ValidationError(
+            f"Invalid provider: {provider}. Valid providers: {', '.join(valid_providers)}"
+        )
+
+    return provider

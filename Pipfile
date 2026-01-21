@@ -10,6 +10,7 @@ playwright = "*"
 slack-bolt = "*"
 slack-sdk = "*"
 langsmith = "*"
+langchain-openai = "*"
 
 [dev-packages]
 pytest = "*"

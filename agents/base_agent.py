@@ -3,8 +3,10 @@
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, TypedDict, Optional
+from typing import Dict, Any, List, TypedDict, Optional, Union
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
+from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.graph import StateGraph, END
 
 from core.exceptions import LLMError
@@ -29,6 +31,7 @@ class BaseAgent(ABC):
         model: str = "gemini-2.5-flash",
         temperature: float = 0,
         max_retries: int = 3,
+        provider: str = "gemini",
         **kwargs,
     ):
         """
@@ -38,33 +41,49 @@ class BaseAgent(ABC):
             model: LLM model name
             temperature: LLM temperature parameter
             max_retries: Maximum retry attempts for LLM calls
+            provider: LLM provider ("gemini" or "openai")
             **kwargs: Additional agent-specific parameters
         """
         self.model = model
         self.temperature = temperature
         self.max_retries = max_retries
+        self.provider = provider.lower()
         self.config = kwargs
-        self._llm: Optional[ChatGoogleGenerativeAI] = None
+        self._llm: Optional[BaseChatModel] = None
         self._workflow: Optional[StateGraph] = None
         self._app = None
 
-        logger.info(f"Initialized {self.__class__.__name__} with model {model}")
+        logger.info(
+            f"Initialized {self.__class__.__name__} with {provider} model {model}"
+        )
 
     @property
-    def llm(self) -> ChatGoogleGenerativeAI:
+    def llm(self) -> BaseChatModel:
         """Lazy-load LLM instance."""
         if self._llm is None:
             self._llm = self._create_llm()
         return self._llm
 
-    def _create_llm(self) -> ChatGoogleGenerativeAI:
-        """Create LLM instance."""
+    def _create_llm(self) -> BaseChatModel:
+        """Create LLM instance based on provider."""
         try:
-            return ChatGoogleGenerativeAI(
-                model=self.model, temperature=self.temperature
-            )
+            if self.provider == "openai":
+                return ChatOpenAI(
+                    model=self.model,
+                    temperature=self.temperature,
+                )
+            elif self.provider == "gemini":
+                return ChatGoogleGenerativeAI(
+                    model=self.model,
+                    temperature=self.temperature,
+                )
+            else:
+                raise ValueError(
+                    f"Unsupported provider: {self.provider}. "
+                    f"Supported providers: gemini, openai"
+                )
         except Exception as e:
-            raise LLMError(f"Failed to initialize LLM: {e}")
+            raise LLMError(f"Failed to initialize {self.provider} LLM: {e}")
 
     @retry_with_exponential_backoff(
         max_retries=3, initial_delay=1.0, exceptions=(Exception,)

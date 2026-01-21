@@ -1,6 +1,6 @@
 # AI Agent Web Validator
 
-A comprehensive, AI-powered web validation framework that automatically detects spelling errors, grammar issues, and visual/UI problems on websites. Built with a modular architecture using LangGraph, Playwright, and Google's Gemini AI.
+A comprehensive, AI-powered web validation framework that automatically detects spelling errors, grammar issues, and visual/UI problems on websites. Built with a modular architecture using LangGraph, Playwright, and support for Google's Gemini AI and OpenAI models.
 
 ## ✨ Features
 
@@ -10,7 +10,7 @@ A comprehensive, AI-powered web validation framework that automatically detects 
 
 ### Advanced Capabilities
 - **Real Browser Automation**: Uses Playwright for accurate rendering of JavaScript-heavy sites
-- **AI-Powered Analysis**: Leverages Google's Gemini 2.5 Flash with vision capabilities
+- **AI-Powered Analysis**: Leverages Google's Gemini 2.5 Flash or OpenAI models (GPT-4o, GPT-4 Turbo) with vision capabilities
 - **Multi-Language Support**: Handles bidirectional text (Hebrew, Arabic, etc.)
 - **Flexible Configuration**: YAML-based config for agents, targets, and output formats
 - **Multiple Output Formats**: Text, JSON, and HTML reports with interactive dashboards
@@ -39,7 +39,9 @@ For detailed architecture documentation, see [ARCHITECTURE.md](docs/ARCHITECTURE
 ## 📋 Requirements
 
 - Python 3.10+
-- Google AI API Key (free tier available at [Google AI Studio](https://makersuite.google.com/app/apikey))
+- API Key from one of:
+  - Google AI API Key (free tier available at [Google AI Studio](https://makersuite.google.com/app/apikey))
+  - OpenAI API Key (get it at [OpenAI Platform](https://platform.openai.com/api-keys))
 
 ## 🚀 Installation
 
@@ -62,16 +64,20 @@ pipenv run install-playwright
 4. Set up your API key:
 ```bash
 cp .env.example .env
-# Edit .env and add your GOOGLE_API_KEY
+# Edit .env and add your GOOGLE_API_KEY or OPENAI_API_KEY (or both)
 ```
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-Create a `.env` file with your API key:
+Create a `.env` file with your API key(s):
 ```bash
-GOOGLE_API_KEY=your_api_key_here
+# For Google Gemini (default)
+GOOGLE_API_KEY=your_google_api_key_here
+
+# For OpenAI (optional)
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ### Configuration File
@@ -82,13 +88,15 @@ Create or edit `config.yaml` to customize agents and targets:
 agents:
   spell_checker:
     enabled: true
-    model: "gemini-2.5-flash"
+    provider: "gemini"  # Options: gemini, openai
+    model: "gemini-2.5-flash"  # For OpenAI: gpt-4o, gpt-4-turbo, gpt-3.5-turbo
     temperature: 0
     max_text_length: 10000
   
   visual_qa:
     enabled: true
-    model: "gemini-2.5-flash"
+    provider: "gemini"  # Options: gemini, openai
+    model: "gemini-2.5-flash"  # For OpenAI: gpt-4o, gpt-4-turbo (vision models)
     temperature: 0
     viewports:
       - width: 1920
@@ -324,20 +332,40 @@ FAILED: Found 3 errors on page https://www.example.com:
 
 - **LangGraph**: Orchestrates the multi-node agent workflow
 - **Playwright**: Provides real browser automation for accurate content scraping
-- **Google Gemini AI**: Powers intelligent text analysis and error detection
+- **AI Models**: Supports both Google Gemini AI and OpenAI for intelligent analysis
 - **python-bidi**: Handles bidirectional text rendering for RTL languages
 
 ## Customization
 
-### Change the Model
+### Switch Between Providers
 
-Edit the `analyze_text_node` function to use a different Gemini model:
-```python
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-pro",  # Use Pro model for higher quality
-    temperature=0
-)
+In your `config.yaml`, change the provider and model:
+```yaml
+agents:
+  spell_checker:
+    provider: "openai"  # Switch to OpenAI
+    model: "gpt-4o"     # Use GPT-4o model
 ```
+
+Or use Gemini:
+```yaml
+agents:
+  spell_checker:
+    provider: "gemini"
+    model: "gemini-2.5-pro"  # Use Pro model for higher quality
+```
+
+### Supported Models
+
+**Gemini Models:**
+- `gemini-2.5-flash` (default, fast and efficient)
+- `gemini-2.5-pro` (higher quality)
+- `gemini-1.5-flash` (legacy)
+
+**OpenAI Models:**
+- `gpt-4o` (latest multimodal model)
+- `gpt-4-turbo` (vision support)
+- `gpt-3.5-turbo` (text-only, faster)
 
 ### Adjust Content Limit
 
@@ -354,6 +382,10 @@ visible_text = page.inner_text("main")  # Only scrape main content area
 # or
 visible_text = page.inner_text("article")  # Only scrape article content
 ```
+
+## 🌟 Credits
+
+Built with ❤️ using LangGraph, Playwright, Google Gemini AI, and OpenAI
 
 ## License
 

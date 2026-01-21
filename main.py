@@ -42,9 +42,9 @@ Examples:
     )
 
     # Input options
-    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument("--url", type=str, help="URL to validate")
-    input_group.add_argument("--config", type=str, help="Path to configuration file")
+    input_group.add_argument("--config", type=str, help="Path to configuration file (default: config.yaml)")
 
     # Agent selection
     parser.add_argument(
@@ -60,8 +60,8 @@ Examples:
         "--format",
         type=str,
         choices=["text", "json", "html"],
-        default="text",
-        help="Output format (default: text)",
+        default="html",
+        help="Output format (default: html)",
     )
     parser.add_argument("--output", type=str, help="Output directory for reports")
 
@@ -134,9 +134,19 @@ def main():
         if args.config:
             logger.info(f"Loading configuration from {args.config}")
             config = ConfigLoader.load(args.config)
-        else:
+        elif args.url:
+            # URL mode without config - use default config
             logger.info("Using default configuration")
             config = ConfigLoader.load()
+        else:
+            # No URL or config specified - try to load config.yaml
+            if Path("config.yaml").exists():
+                logger.info("Loading configuration from config.yaml")
+                config = ConfigLoader.load("config.yaml")
+            else:
+                logger.error("No URL or config file specified, and config.yaml not found")
+                print("\n✗ Error: Please specify --url or create a config.yaml file", file=sys.stderr)
+                sys.exit(1)
 
         # Create orchestrator
         orchestrator = Orchestrator(config._config)
@@ -172,9 +182,12 @@ def main():
         reporter = get_reporter(output_format, timestamp=True)
         report_content = reporter.format_report(results)
 
+        # Determine output directory
+        output_dir_path = args.output or config.get_output_config().get("path")
+
         # Output report
-        if args.output:
-            output_dir = Path(args.output)
+        if output_dir_path:
+            output_dir = Path(output_dir_path)
             output_dir.mkdir(parents=True, exist_ok=True)
 
             filename = generate_output_filename(output_format, args.url)

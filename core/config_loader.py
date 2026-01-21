@@ -11,6 +11,7 @@ from utils.validation_utils import (
     validate_viewport,
     validate_model_name,
     validate_temperature,
+    validate_provider,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,10 @@ class Config:
                     raise ConfigurationError(
                         f"Agent config for {agent_name} must be a dictionary"
                     )
+
+                # Validate provider if present
+                if "provider" in agent_config:
+                    validate_provider(agent_config["provider"])
 
                 # Validate model if present
                 if "model" in agent_config:
@@ -164,6 +169,11 @@ class ConfigLoader:
             # This is already handled by langchain, but we could add it to config if needed
             pass
 
+        # Override OPENAI_API_KEY if set
+        if "OPENAI_API_KEY" in os.environ:
+            # This is already handled by langchain-openai
+            pass
+
         # Add support for other env var overrides as needed
         # Example: AGENT_VALIDATOR_MODEL, AGENT_VALIDATOR_TEMPERATURE, etc.
 
@@ -176,12 +186,14 @@ class ConfigLoader:
             "agents": {
                 "spell_checker": {
                     "enabled": True,
+                    "provider": "gemini",
                     "model": "gemini-2.5-flash",
                     "temperature": 0,
                     "max_text_length": 10000,
                 },
                 "visual_qa": {
                     "enabled": True,
+                    "provider": "gemini",
                     "model": "gemini-2.5-flash",
                     "temperature": 0,
                     "viewports": [{"width": 1920, "height": 1080, "name": "Desktop"}],

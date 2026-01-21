@@ -35,6 +35,7 @@ class SpellCheckerAgent(BaseAgent):
         temperature: float = 0,
         max_text_length: int = 10000,
         wait_time: int = 2000,
+        provider: str = "gemini",
         **kwargs,
     ):
         """
@@ -45,9 +46,12 @@ class SpellCheckerAgent(BaseAgent):
             temperature: LLM temperature parameter
             max_text_length: Maximum text length to analyze
             wait_time: Time to wait for dynamic content (milliseconds)
+            provider: LLM provider ("gemini" or "openai")
             **kwargs: Additional parameters
         """
-        super().__init__(model=model, temperature=temperature, **kwargs)
+        super().__init__(
+            model=model, temperature=temperature, provider=provider, **kwargs
+        )
         self.max_text_length = max_text_length
         self.wait_time = wait_time
         self._prompt_template = self._load_prompt_template()

@@ -38,6 +38,7 @@ class VisualQAAgent(BaseAgent):
         viewport_width: int = 1920,
         viewport_height: int = 1080,
         wait_time: int = 5000,
+        provider: str = "gemini",
         **kwargs,
     ):
         """
@@ -49,9 +50,12 @@ class VisualQAAgent(BaseAgent):
             viewport_width: Browser viewport width
             viewport_height: Browser viewport height
             wait_time: Time to wait before screenshot (milliseconds)
+            provider: LLM provider ("gemini" or "openai")
             **kwargs: Additional parameters
         """
-        super().__init__(model=model, temperature=temperature, **kwargs)
+        super().__init__(
+            model=model, temperature=temperature, provider=provider, **kwargs
+        )
         self.viewport_width, self.viewport_height = validate_viewport(
             viewport_width, viewport_height
         )
@@ -110,16 +114,25 @@ class VisualQAAgent(BaseAgent):
         """Analyze screenshot for visual issues."""
         logger.info("Analyzing visual elements with AI")
 
+        # Format image URL based on provider
+        if self.provider == "openai":
+            image_content = {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{state['screenshot']}"},
+            }
+        else:  # gemini
+            image_content = {
+                "type": "image_url",
+                "image_url": f"data:image/png;base64,{state['screenshot']}",
+            }
+
         message = HumanMessage(
             content=[
                 {
                     "type": "text",
                     "text": self._prompt_template,
                 },
-                {
-                    "type": "image_url",
-                    "image_url": f"data:image/png;base64,{state['screenshot']}",
-                },
+                image_content,
             ]
         )
 
