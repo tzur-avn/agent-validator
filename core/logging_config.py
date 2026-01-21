@@ -11,6 +11,7 @@ def setup_logging(
     log_file: Optional[str] = None,
     verbose: bool = False,
     quiet: bool = False,
+    show_progress: bool = False,
 ) -> None:
     """
     Configure logging for the application.
@@ -20,6 +21,7 @@ def setup_logging(
         log_file: Optional path to log file
         verbose: Enable verbose (DEBUG) logging
         quiet: Suppress console output except errors
+        show_progress: Progress bars are shown (suppresses console logging)
     """
     # Determine logging level
     if verbose:
@@ -42,8 +44,8 @@ def setup_logging(
     # Remove existing handlers
     root_logger.handlers.clear()
 
-    # Console handler
-    if not quiet or log_level == logging.ERROR:
+    # Console handler - suppress if progress bars are shown
+    if not show_progress and (not quiet or log_level == logging.ERROR):
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(log_level)
         console_handler.setFormatter(formatter)

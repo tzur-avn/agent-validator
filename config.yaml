@@ -35,8 +35,8 @@ targets:
     agents: ["spell_checker", "visual_qa"]
   
   # Test on a real website with more visual elements
-  - url: "https://www.bbc.com"
-    agents: ["visual_qa"]
+  # - url: "https://www.bbc.com"
+  #   agents: ["visual_qa"]
   
   # Add more targets as needed
   # - url: "https://www.github.com"

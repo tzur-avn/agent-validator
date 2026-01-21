@@ -97,6 +97,7 @@ class VisualQAAgent(BaseAgent):
             f"Capturing screenshot of {state['url']} "
             f"at {state['viewport_width']}x{state['viewport_height']}"
         )
+        self._update_progress("Capturing screenshot", advance=1)
 
         with BrowserSession(
             viewport={
@@ -113,6 +114,7 @@ class VisualQAAgent(BaseAgent):
     def analyze_visual_node(self, state: VisualQAState) -> Dict[str, List[dict]]:
         """Analyze screenshot for visual issues."""
         logger.info("Analyzing visual elements with AI")
+        self._update_progress("Analyzing visuals with AI", advance=1)
 
         # Format image URL based on provider
         if self.provider == "openai":
@@ -148,6 +150,7 @@ class VisualQAAgent(BaseAgent):
     def generate_report_node(self, state: VisualQAState) -> Dict[str, str]:
         """Generate detailed visual QA report."""
         logger.debug("Generating visual QA report")
+        self._update_progress("Generating report", advance=1)
 
         viewport_info = f"{state['viewport_width']}x{state['viewport_height']}"
 

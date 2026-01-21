@@ -3,7 +3,7 @@
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, TypedDict, Optional, Union
+from typing import Dict, Any, List, TypedDict, Optional, Union, Callable
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -52,6 +52,7 @@ class BaseAgent(ABC):
         self._llm: Optional[BaseChatModel] = None
         self._workflow: Optional[StateGraph] = None
         self._app = None
+        self._progress_callback: Optional[Callable[[str, int], None]] = None
 
         logger.info(
             f"Initialized {self.__class__.__name__} with {provider} model {model}"
@@ -156,6 +157,26 @@ class BaseAgent(ABC):
             logger.debug(f"{self.__class__.__name__} workflow compiled")
 
         return self._app
+
+    def set_progress_callback(self, callback: Optional[Callable[[str, int], None]]):
+        """
+        Set progress callback function.
+
+        Args:
+            callback: Function to call for progress updates (step_name, advance_by)
+        """
+        self._progress_callback = callback
+
+    def _update_progress(self, step_name: str, advance: int = 1):
+        """
+        Update progress if callback is set.
+
+        Args:
+            step_name: Name of the current step
+            advance: Amount to advance
+        """
+        if self._progress_callback:
+            self._progress_callback(step_name, advance)
 
     def run(self, url: str, **kwargs) -> Dict[str, Any]:
         """

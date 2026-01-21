@@ -73,6 +73,7 @@ class SpellCheckerAgent(BaseAgent):
     def scrape_web_node(self, state: SpellCheckerState) -> Dict[str, str]:
         """Scrape text content from web page."""
         logger.info(f"Scraping text from: {state['url']}")
+        self._update_progress("Scraping web page", advance=1)
 
         with BrowserSession() as browser:
             browser.navigate(state["url"])
@@ -87,6 +88,7 @@ class SpellCheckerAgent(BaseAgent):
     def analyze_text_node(self, state: SpellCheckerState) -> Dict[str, List[dict]]:
         """Analyze text for spelling and grammar errors."""
         logger.info(f"Analyzing {len(state['raw_text'])} characters")
+        self._update_progress("Analyzing text with AI", advance=1)
 
         prompt = self._prompt_template.replace("{text}", state["raw_text"])
 
@@ -102,6 +104,7 @@ class SpellCheckerAgent(BaseAgent):
     def generate_report_node(self, state: SpellCheckerState) -> Dict[str, str]:
         """Generate report from findings."""
         logger.debug("Generating spell check report")
+        self._update_progress("Generating report", advance=1)
 
         if not state["errors"]:
             report = f"✓ SUCCESS: No spelling errors found on {state['url']}"

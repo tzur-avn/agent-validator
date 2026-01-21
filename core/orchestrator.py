@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from agents import SpellCheckerAgent, VisualQAAgent
 from core.exceptions import AgentValidatorError
 from utils.validation_utils import validate_url
+from utils.progress_utils import ProgressTracker
 
 logger = logging.getLogger(__name__)
 
@@ -19,15 +20,20 @@ class Orchestrator:
         "visual_qa": VisualQAAgent,
     }
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self, config: Optional[Dict[str, Any]] = None, show_progress: bool = True
+    ):
         """
         Initialize orchestrator.
 
         Args:
             config: Configuration dictionary
+            show_progress: Whether to show progress bars (default: True)
         """
         self.config = config or {}
         self._agents: Dict[str, Any] = {}
+        self.show_progress = show_progress
+        self.progress_tracker: Optional[ProgressTracker] = None
 
     def register_agent(self, name: str, agent_instance: Any) -> None:
         """
@@ -93,8 +99,44 @@ class Orchestrator:
         try:
             agent = self.create_agent(agent_name, agent_config)
 
+            # Set up progress tracking
+            if self.progress_tracker:
+                # Extract domain from URL for cleaner display
+                from urllib.parse import urlparse
+                from rich.markup import escape
+
+                parsed_url = urlparse(url)
+                display_url = parsed_url.netloc or url
+
+                # Escape the agent name and URL to prevent markup interpretation
+                escaped_agent = escape(f"[{agent.name}]")
+                escaped_url = escape(f"[{display_url}]")
+
+                task_key = self.progress_tracker.start_task(
+                    agent_name=agent.name,
+                    description=f"[bold cyan]{escaped_agent}[/bold cyan][yellow]{escaped_url}[/yellow] [dim]Starting...[/dim]",
+                    total=3,  # Most agents have 3 steps
+                )
+
+                def progress_callback(step_name: str, advance: int = 1):
+                    """Progress callback for agent."""
+                    if self.progress_tracker:
+                        # Format: [AgentName][domain] step description with colors
+                        full_description = f"[bold cyan]{escaped_agent}[/bold cyan][yellow]{escaped_url}[/yellow] [green]{step_name}[/green]"
+                        self.progress_tracker.update_task(
+                            task_key,
+                            advance=advance,
+                            description=full_description,
+                        )
+
+                agent.set_progress_callback(progress_callback)
+
             logger.info(f"Running {agent_name} on {url}")
             result = agent.run(url, **kwargs)
+
+            # Complete the progress task
+            if self.progress_tracker:
+                self.progress_tracker.complete_task(agent.name)
 
             return {
                 "agent": agent.name,
@@ -134,38 +176,46 @@ class Orchestrator:
         url = validate_url(url)
         results = []
 
-        if parallel:
-            logger.info(f"Running {len(agent_names)} agents in parallel on {url}")
-            with ThreadPoolExecutor(max_workers=len(agent_names)) as executor:
-                futures = {}
+        # Create progress tracker if enabled
+        with ProgressTracker(show_progress=self.show_progress) as progress:
+            self.progress_tracker = progress
+
+            if parallel:
+                logger.info(f"Running {len(agent_names)} agents in parallel on {url}")
+                with ThreadPoolExecutor(max_workers=len(agent_names)) as executor:
+                    futures = {}
+                    for agent_name in agent_names:
+                        agent_config = self.config.get("agents", {}).get(agent_name, {})
+                        future = executor.submit(
+                            self.run_agent, agent_name, url, agent_config, **kwargs
+                        )
+                        futures[future] = agent_name
+
+                    for future in as_completed(futures):
+                        try:
+                            result = future.result()
+                            results.append(result)
+                        except Exception as e:
+                            agent_name = futures[future]
+                            logger.error(
+                                f"Parallel execution failed for {agent_name}: {e}"
+                            )
+                            results.append(
+                                {
+                                    "agent": agent_name,
+                                    "url": url,
+                                    "success": False,
+                                    "error": str(e),
+                                }
+                            )
+            else:
+                logger.info(f"Running {len(agent_names)} agents sequentially on {url}")
                 for agent_name in agent_names:
                     agent_config = self.config.get("agents", {}).get(agent_name, {})
-                    future = executor.submit(
-                        self.run_agent, agent_name, url, agent_config, **kwargs
-                    )
-                    futures[future] = agent_name
+                    result = self.run_agent(agent_name, url, agent_config, **kwargs)
+                    results.append(result)
 
-                for future in as_completed(futures):
-                    try:
-                        result = future.result()
-                        results.append(result)
-                    except Exception as e:
-                        agent_name = futures[future]
-                        logger.error(f"Parallel execution failed for {agent_name}: {e}")
-                        results.append(
-                            {
-                                "agent": agent_name,
-                                "url": url,
-                                "success": False,
-                                "error": str(e),
-                            }
-                        )
-        else:
-            logger.info(f"Running {len(agent_names)} agents sequentially on {url}")
-            for agent_name in agent_names:
-                agent_config = self.config.get("agents", {}).get(agent_name, {})
-                result = self.run_agent(agent_name, url, agent_config, **kwargs)
-                results.append(result)
+            self.progress_tracker = None
 
         return results
 

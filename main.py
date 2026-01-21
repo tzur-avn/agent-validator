@@ -128,8 +128,16 @@ def main():
     # Parse arguments
     args = parse_args()
 
-    # Setup logging
-    setup_logging(verbose=args.verbose, quiet=args.quiet, log_file=args.log_file)
+    # Determine if we should show progress bars
+    show_progress = not args.quiet and not args.verbose
+
+    # Setup logging (suppress console logs if showing progress bars)
+    setup_logging(
+        verbose=args.verbose,
+        quiet=args.quiet,
+        log_file=args.log_file,
+        show_progress=show_progress,
+    )
 
     try:
         # Load configuration
@@ -156,7 +164,8 @@ def main():
                 sys.exit(1)
 
         # Create orchestrator
-        orchestrator = Orchestrator(config._config)
+        show_progress = not args.quiet  # Hide progress bars in quiet mode
+        orchestrator = Orchestrator(config._config, show_progress=show_progress)
 
         # Determine what to run
         if args.url:

@@ -11,6 +11,7 @@ slack-bolt = "*"
 slack-sdk = "*"
 langsmith = "*"
 langchain-openai = "*"
+rich = "*"
 
 [dev-packages]
 pytest = "*"
