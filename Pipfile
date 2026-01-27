@@ -12,8 +12,10 @@ slack-sdk = "*"
 langsmith = "*"
 langchain-openai = "*"
 rich = "*"
+langgraph-cli = {extras = ["inmem"], version = "*"}
 
 [dev-packages]
+langgraph-cli = "*"
 pytest = "*"
 pytest-mock = "*"
 
@@ -32,3 +34,5 @@ spell-check = "python agent_web_speller.py"
 install-playwright = "playwright install"
 # Testing
 test = "pytest tests/"
+# LangGraph Studio
+studio = "langgraph dev"

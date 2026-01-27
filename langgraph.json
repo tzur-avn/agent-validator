@@ -1,0 +1,8 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "spell_checker": "./agent_graphs.py:spell_checker_graph",
+    "visual_qa": "./agent_graphs.py:visual_qa_graph"
+  },
+  "env": ".env"
+}
