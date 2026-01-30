@@ -65,6 +65,39 @@ class Config:
                 if "url" in target:
                     validate_url(target["url"])
 
+                # Validate auth configuration if present
+                if "auth" in target:
+                    auth = target["auth"]
+                    if not isinstance(auth, dict):
+                        raise ConfigurationError(
+                            "Auth configuration must be a dictionary"
+                        )
+
+                    # Validate auth type
+                    auth_type = auth.get("type", "form")
+                    if auth_type not in ["form", "basic"]:
+                        raise ConfigurationError(
+                            f"Invalid auth type: {auth_type}. Must be 'form' or 'basic'"
+                        )
+
+                    # Validate required fields
+                    if "username" not in auth:
+                        raise ConfigurationError(
+                            "Auth configuration missing 'username' field"
+                        )
+                    if "password" not in auth:
+                        raise ConfigurationError(
+                            "Auth configuration missing 'password' field"
+                        )
+
+                    # Validate form-based auth selectors
+                    if auth_type == "form" and "selectors" in auth:
+                        selectors = auth["selectors"]
+                        if not isinstance(selectors, dict):
+                            raise ConfigurationError(
+                                "Auth selectors must be a dictionary"
+                            )
+
     def get_agent_config(self, agent_name: str) -> Dict[str, Any]:
         """
         Get configuration for a specific agent.

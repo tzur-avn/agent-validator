@@ -67,7 +67,7 @@ This will install the `langsmith` package along with any other dependencies.
 Run the automated setup check:
 
 ```bash
-./setup_langsmith.sh
+./scripts/setup_langsmith.sh
 ```
 
 This will verify:

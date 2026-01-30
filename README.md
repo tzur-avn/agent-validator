@@ -11,6 +11,7 @@ A comprehensive, AI-powered web validation framework that automatically detects 
 ### Advanced Capabilities
 - **Real Browser Automation**: Uses Playwright for accurate rendering of JavaScript-heavy sites
 - **AI-Powered Analysis**: Leverages Google's Gemini 2.5 Flash or OpenAI models (GPT-4o, GPT-4 Turbo) with vision capabilities
+- **Authentication Support**: Test authenticated websites with form-based or HTTP Basic authentication (see [Authentication Guide](docs/AUTHENTICATION.md))
 - **Multi-Language Support**: Handles bidirectional text (Hebrew, Arabic, etc.)
 - **Flexible Configuration**: YAML-based config for agents, targets, and output formats
 - **Multiple Output Formats**: Text, JSON, and HTML reports with interactive dashboards
@@ -106,6 +107,18 @@ agents:
 targets:
   - url: "https://example.com"
     agents: ["spell_checker", "visual_qa"]
+  
+  # Example with authentication
+  - url: "https://app.example.com/dashboard"
+    agents: ["spell_checker", "visual_qa"]
+    auth:
+      type: form  # or "basic" for HTTP Basic auth
+      username: "${AUTH_USERNAME}"  # Use environment variables
+      password: "${AUTH_PASSWORD}"
+      selectors:  # Required for form auth
+        username: 'input[name="username"]'
+        password: 'input[name="password"]'
+        submit: 'button[type="submit"]'
 
 output:
   format: "html"  # Options: text, json, html
@@ -113,7 +126,7 @@ output:
   timestamp: true
 ```
 
-See [examples/](examples/) for more configuration examples.
+See [examples/](examples/) for more configuration examples and [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) for authentication setup.
 
 ## 🎯 Usage
 
@@ -136,6 +149,23 @@ pipenv run python main.py --url https://example.com --format html --output repor
 
 # Verbose logging
 pipenv run python main.py --url https://example.com -v
+
+# With authentication (form-based)
+export AUTH_USERNAME="user@example.com"
+export AUTH_PASSWORD="password123"
+pipenv run python main.py --url https://app.example.com/dashboard \
+  --auth-type form \
+  --username '${AUTH_USERNAME}' \
+  --password '${AUTH_PASSWORD}' \
+  --username-selector 'input[name="username"]' \
+  --password-selector 'input[name="password"]' \
+  --submit-selector 'button[type="submit"]'
+
+# With authentication (HTTP Basic)
+pipenv run python main.py --url https://api.example.com/docs \
+  --auth-type basic \
+  --username admin \
+  --password '${API_KEY}'
 ```
 
 #### Using pipenv scripts

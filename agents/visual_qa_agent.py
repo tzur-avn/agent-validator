@@ -91,6 +91,7 @@ class VisualQAAgent(BaseAgent):
             "issues": [],
             "report": "",
             "element_screenshots": {},
+            "auth": kwargs.get("auth"),  # Authentication config
         }
 
     def capture_visual_node(self, state: VisualQAState) -> Dict[str, str]:
@@ -101,11 +102,14 @@ class VisualQAAgent(BaseAgent):
         )
         self._update_progress("Capturing screenshot", advance=1)
 
+        # Pass auth config to browser session
+        auth_config = state.get("auth")
         with BrowserSession(
             viewport={
                 "width": state["viewport_width"],
                 "height": state["viewport_height"],
-            }
+            },
+            auth=auth_config,
         ) as browser:
             browser.navigate(state["url"])
             screenshot_b64 = browser.take_screenshot(wait_time=self.wait_time)
@@ -162,11 +166,14 @@ class VisualQAAgent(BaseAgent):
 
         element_screenshots = {}
 
+        # Pass auth config to browser session
+        auth_config = state.get("auth")
         with BrowserSession(
             viewport={
                 "width": state["viewport_width"],
                 "height": state["viewport_height"],
-            }
+            },
+            auth=auth_config,
         ) as browser:
             browser.navigate(state["url"])
             browser.page.wait_for_timeout(self.wait_time)

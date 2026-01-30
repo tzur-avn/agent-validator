@@ -1,0 +1,34 @@
+# Live test configuration for localhost:3001
+# Testing authentication with real credentials
+
+agents:
+  spell_checker:
+    enabled: true
+    model: gemini-2.5-flash
+    temperature: 0
+    max_text_length: 50000
+  
+  visual_qa:
+    enabled: true
+    model: gemini-2.5-flash
+    temperature: 0
+    viewport_width: 1920
+    viewport_height: 1080
+
+targets:
+  - url: "http://localhost:3001/customer-center"
+    agents:
+      - spell_checker
+      - visual_qa
+    auth:
+      type: form
+      username: "${TEST_EMAIL}"
+      password: "${TEST_PASSWORD}"
+      selectors:
+        username: 'input[name="username"]'
+        password: 'input[name="password"]'
+        submit: 'button[type="submit"]'
+
+output:
+  format: html
+  path: reports/

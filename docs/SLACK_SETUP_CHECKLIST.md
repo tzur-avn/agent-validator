@@ -116,7 +116,7 @@ If something doesn't work, check:
 Alternatively, run the automated setup:
 
 ```bash
-./setup_slack.sh
+./scripts/setup_slack.sh
 ```
 
 This will:

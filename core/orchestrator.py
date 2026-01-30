@@ -88,7 +88,7 @@ class Orchestrator:
             agent_name: Name of the agent to run
             url: URL to validate
             agent_config: Optional agent configuration
-            **kwargs: Additional parameters for the agent
+            **kwargs: Additional parameters for the agent (can include 'auth')
 
         Returns:
             Result dictionary with agent output
@@ -250,8 +250,16 @@ class Orchestrator:
                     if config.get("enabled", True)
                 ]
 
+            # Extract auth configuration from target
+            auth_config = target.get("auth")
+            kwargs = {}
+            if auth_config:
+                kwargs["auth"] = auth_config
+
             logger.info(f"Processing target: {url}")
-            results = self.run_multiple_agents(url, agent_names, parallel=parallel)
+            results = self.run_multiple_agents(
+                url, agent_names, parallel=parallel, **kwargs
+            )
             all_results.extend(results)
 
         return all_results

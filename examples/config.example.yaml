@@ -22,6 +22,28 @@ agents:
 targets:
   - url: "https://www.example.com"
     agents: ["spell_checker", "visual_qa"]
+  
+  # Example with authentication
+  - url: "http://localhost:3001/customer-center"
+    agents: ["spell_checker", "visual_qa"]
+    auth:
+      type: "form"  # Options: "form" or "basic"
+      username: "admin"
+      password: "password123"  # Can use environment variable: "${PASSWORD}"
+      login_url: "http://localhost:3001/auth"  # Optional, defaults to target url
+      selectors:  # Required for form-based auth
+        username_field: "input[name='username']"
+        password_field: "input[name='password']"
+        submit_button: "button[type='submit']"
+      wait_after_login: 2000  # Milliseconds to wait after login (optional)
+  
+  # Example with HTTP Basic Authentication
+  - url: "https://secure.example.com/admin"
+    agents: ["spell_checker"]
+    auth:
+      type: "basic"
+      username: "admin"
+      password: "${ADMIN_PASSWORD}"  # Environment variable support
 
 output:
   format: "text"

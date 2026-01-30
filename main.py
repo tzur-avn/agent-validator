@@ -57,6 +57,35 @@ Examples:
         help="Specific agents to run (default: all enabled)",
     )
 
+    # Authentication options
+    parser.add_argument(
+        "--auth-type",
+        type=str,
+        choices=["form", "basic"],
+        help="Authentication type (form or HTTP basic)",
+    )
+    parser.add_argument("--username", type=str, help="Username for authentication")
+    parser.add_argument(
+        "--password",
+        type=str,
+        help="Password for authentication (or use ${ENV_VAR} for environment variable)",
+    )
+    parser.add_argument(
+        "--username-selector",
+        type=str,
+        help="CSS selector for username field (form auth only)",
+    )
+    parser.add_argument(
+        "--password-selector",
+        type=str,
+        help="CSS selector for password field (form auth only)",
+    )
+    parser.add_argument(
+        "--submit-selector",
+        type=str,
+        help="CSS selector for submit button (form auth only)",
+    )
+
     # Output options
     parser.add_argument(
         "--format",
@@ -179,9 +208,35 @@ def main():
                     if agent_config.get("enabled", True)
                 ]
 
+            # Build auth configuration from CLI args if provided
+            kwargs = {}
+            if args.auth_type:
+                auth_config = {
+                    "type": args.auth_type,
+                    "username": args.username,
+                    "password": args.password,
+                }
+
+                # Add selectors for form auth
+                if args.auth_type == "form":
+                    if args.username_selector:
+                        auth_config.setdefault("selectors", {})[
+                            "username"
+                        ] = args.username_selector
+                    if args.password_selector:
+                        auth_config.setdefault("selectors", {})[
+                            "password"
+                        ] = args.password_selector
+                    if args.submit_selector:
+                        auth_config.setdefault("selectors", {})[
+                            "submit"
+                        ] = args.submit_selector
+
+                kwargs["auth"] = auth_config
+
             logger.info(f"Running {len(agent_names)} agents on {args.url}")
             results = orchestrator.run_multiple_agents(
-                args.url, agent_names, parallel=args.parallel
+                args.url, agent_names, parallel=args.parallel, **kwargs
             )
         else:
             # Config file mode with targets

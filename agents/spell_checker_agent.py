@@ -68,14 +68,22 @@ class SpellCheckerAgent(BaseAgent):
     def create_initial_state(self, url: str, **kwargs) -> Dict[str, Any]:
         """Create initial state for spell checking."""
         url = validate_url(url)
-        return {"url": url, "raw_text": "", "errors": [], "report": ""}
+        return {
+            "url": url,
+            "raw_text": "",
+            "errors": [],
+            "report": "",
+            "auth": kwargs.get("auth"),  # Pass auth config to state
+        }
 
     def scrape_web_node(self, state: SpellCheckerState) -> Dict[str, str]:
         """Scrape text content from web page."""
         logger.info(f"Scraping text from: {state['url']}")
         self._update_progress("Scraping web page", advance=1)
 
-        with BrowserSession() as browser:
+        # Pass auth config to browser session
+        auth_config = state.get("auth")
+        with BrowserSession(auth=auth_config) as browser:
             browser.navigate(state["url"])
             visible_text = browser.get_text(wait_time=self.wait_time)
 
