@@ -15,10 +15,13 @@ class HTMLReporter(BaseReporter):
         # Summary section
         html_parts.append(self._generate_summary_html(results))
 
-        # Detailed results
+        # Group results by URL
+        results_by_url = self._group_results_by_url(results)
+
+        # Detailed results organized by URL
         html_parts.append('<div class="results">')
-        for result in results:
-            html_parts.append(self._format_result_html(result))
+        for url, url_results in results_by_url.items():
+            html_parts.append(self._format_url_section_html(url, url_results))
         html_parts.append("</div>")
 
         html_parts.append(self._get_html_footer())
@@ -76,17 +79,51 @@ class HTMLReporter(BaseReporter):
             font-weight: bold;
             color: #333;
         }}
-        .result-card {{
+        .url-section {{
             background: white;
             padding: 25px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
-        .result-header {{
-            border-bottom: 2px solid #eee;
+        .url-header {{
+            border-bottom: 3px solid #667eea;
             padding-bottom: 15px;
+            margin-bottom: 20px;
+        }}
+        .url-header h2 {{
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 24px;
+        }}
+        .url-header .url-link {{
+            color: #667eea;
+            text-decoration: none;
+            font-size: 16px;
+            word-break: break-all;
+        }}
+        .url-header .url-link:hover {{
+            text-decoration: underline;
+        }}
+        .agent-results {{
+            margin-top: 15px;
+        }}
+        .result-card {{
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 6px;
             margin-bottom: 15px;
+            border-left: 4px solid #6366f1;
+        }}
+        .result-header {{
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }}
+        .result-header h3 {{
+            margin: 0;
+            color: #4b5563;
+            font-size: 18px;
         }}
         .status-pass {{
             color: #22c55e;
@@ -209,30 +246,47 @@ class HTMLReporter(BaseReporter):
     </div>
 """
 
-    def _format_result_html(self, result: Dict[str, Any]) -> str:
-        """Format a single result as HTML."""
-        agent_name = result.get("agent", "Unknown")
-        url = result.get("url", "Unknown")
-        success = result.get("success", False)
-        status_class = "status-pass" if success else "status-fail"
-        status_text = "✓ PASSED" if success else "✗ FAILED"
+    def _group_results_by_url(self, results: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        """Group results by URL."""
+        grouped = {}
+        for result in results:
+            url = result.get("url", "Unknown")
+            if url not in grouped:
+                grouped[url] = []
+            grouped[url].append(result)
+        return grouped
+
+    def _format_url_section_html(self, url: str, url_results: List[Dict[str, Any]]) -> str:
+        """Format a URL section with all its agent results."""
+        # Calculate overall status for this URL
+        all_passed = all(r.get("success", False) for r in url_results)
+        total_issues = 0
+        for result in url_results:
+            if result.get("errors"):
+                total_issues += len(result["errors"])
+            if result.get("issues"):
+                total_issues += len(result["issues"])
+
+        status_class = "status-pass" if all_passed else "status-fail"
+        status_text = "✓ ALL CHECKS PASSED" if all_passed else f"✗ {total_issues} ISSUE(S) FOUND"
 
         # Generate unique ID for screenshot toggle
-        screenshot_id = hashlib.md5(f"{agent_name}-{url}".encode()).hexdigest()[:8]
+        screenshot_id = hashlib.md5(url.encode()).hexdigest()[:8]
 
         html = f"""
-    <div class="result-card">
-        <div class="result-header">
-            <h2>{agent_name}</h2>
-            <p><strong>URL:</strong> <a href="{url}" target="_blank">{url}</a></p>
+    <div class="url-section">
+        <div class="url-header">
+            <h2>📄 Page Analysis</h2>
+            <p><strong>URL:</strong> <a href="{url}" target="_blank" class="url-link">{url}</a></p>
             <p class="{status_class}">{status_text}</p>
         </div>
 """
 
-        # Add full page screenshot if available
-        screenshot = result.get("screenshot", "")
-        if screenshot:
-            html += f"""
+        # Add full page screenshot if available (from first result that has one)
+        for result in url_results:
+            screenshot = result.get("screenshot", "")
+            if screenshot:
+                html += f"""
         <div class="page-screenshot">
             <button class="screenshot-toggle" onclick="toggleScreenshot('screenshot-{screenshot_id}')">📷 Show Page Screenshot</button>
             <div id="screenshot-{screenshot_id}" class="screenshot-content">
@@ -240,10 +294,36 @@ class HTMLReporter(BaseReporter):
             </div>
         </div>
 """
+                break  # Only show one page screenshot per URL
+
+        # Add agent results
+        html += '        <div class="agent-results">\n'
+        for result in url_results:
+            html += self._format_result_html(result, include_url=False)
+        html += "        </div>\n"
+        html += "    </div>\n"
+
+        return html
+
+    def _format_result_html(self, result: Dict[str, Any], include_url: bool = True) -> str:
+        """Format a single result as HTML."""
+        agent_name = result.get("agent", "Unknown")
+        url = result.get("url", "Unknown")
+        success = result.get("success", False)
+        status_class = "status-pass" if success else "status-fail"
+        status_text = "✓ PASSED" if success else "✗ FAILED"
+
+        html = f"""
+        <div class="result-card">
+            <div class="result-header">
+                <h3>{agent_name}</h3>
+                <p class="{status_class}">{status_text}</p>
+            </div>
+"""
 
         if result.get("error"):
             html += (
-                f'<div class="error"><strong>Error:</strong> {result["error"]}</div>'
+                f'    <div class="error"><strong>Error:</strong> {result["error"]}</div>\n'
             )
 
         # Format agent-specific data
@@ -256,12 +336,12 @@ class HTMLReporter(BaseReporter):
                 result["issues"], element_screenshots
             )
 
-        html += "    </div>\n"
+        html += "        </div>\n"
         return html
 
     def _format_spelling_errors_html(self, errors: List[Dict[str, Any]]) -> str:
         """Format spelling errors as HTML."""
-        html = f"<h3>Spelling Errors ({len(errors)})</h3>\n"
+        html = f"    <h4>Spelling Errors ({len(errors)})</h4>\n"
 
         for error in errors:
             original = error.get("original", "")
@@ -269,16 +349,16 @@ class HTMLReporter(BaseReporter):
             context = error.get("context", "")
 
             html += f"""
-        <div class="error">
-            <strong>Error:</strong> "{original}" → <strong>Correction:</strong> "{correction}"<br>
-            <em>Context:</em> "{context}"
-        </div>
+            <div class="error">
+                <strong>Error:</strong> "{original}" → <strong>Correction:</strong> "{correction}"<br>
+                <em>Context:</em> "{context}"
+            </div>
 """
 
         return html
 
     def _format_visual_issues_html(
-        self, issues: List[Dict[str, Any]], element_screenshots: Dict[int, str] = None
+        self, issues: List[Dict[str, Any]], element_screenshots: Dict[int, str] | None = None
     ) -> str:
         """Format visual issues as HTML."""
         if element_screenshots is None:
@@ -291,14 +371,14 @@ class HTMLReporter(BaseReporter):
             if severity in by_severity:
                 by_severity[severity].append((idx, issue))
 
-        html = f"<h3>Visual Issues ({len(issues)})</h3>\n"
+        html = f"    <h4>Visual Issues ({len(issues)})</h4>\n"
 
         for severity in ["critical", "high", "medium", "low"]:
             issues_list = by_severity[severity]
             if not issues_list:
                 continue
 
-            html += f'<h4 class="severity-{severity}">{severity.upper()} ({len(issues_list)})</h4>\n'
+            html += f'    <h5 class="severity-{severity}">{severity.upper()} ({len(issues_list)})</h5>\n'
 
             for idx, issue in issues_list:
                 issue_type = issue.get("type", "unknown").upper()
@@ -307,24 +387,24 @@ class HTMLReporter(BaseReporter):
                 recommendation = issue.get("recommendation", "")
 
                 html += f"""
-        <div class="issue">
-            <strong>[{issue_type}]</strong> {issue_desc}<br>
-            <strong>Location:</strong> {location}<br>
-            <strong>Fix:</strong> {recommendation}"""
+            <div class="issue">
+                <strong>[{issue_type}]</strong> {issue_desc}<br>
+                <strong>Location:</strong> {location}<br>
+                <strong>Fix:</strong> {recommendation}"""
 
                 # Add element screenshot if available
                 if idx in element_screenshots:
                     screenshot_b64 = element_screenshots[idx]
                     html += f"""
-            <div style="margin-top: 10px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                <strong>Screenshot:</strong><br>
-                <img src="data:image/png;base64,{screenshot_b64}" 
-                     style="max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 5px; border-radius: 4px;" 
-                     alt="Issue screenshot">
-            </div>"""
+                <div style="margin-top: 10px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                    <strong>Screenshot:</strong><br>
+                    <img src="data:image/png;base64,{screenshot_b64}" 
+                         style="max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 5px; border-radius: 4px;" 
+                         alt="Issue screenshot">
+                </div>"""
 
                 html += """
-        </div>
+            </div>
 """
 
         return html
