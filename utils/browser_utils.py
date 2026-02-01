@@ -3,10 +3,42 @@
 import base64
 import logging
 from typing import Optional, Dict, Any
+from urllib.parse import urlparse, urlunparse
 from playwright.sync_api import sync_playwright, Browser, Page, Playwright
 from core.exceptions import BrowserError
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_url(url: str) -> str:
+    """Normalize URL for comparison by handling common redirects.
+
+    Args:
+        url: URL to normalize
+
+    Returns:
+        Normalized URL string
+    """
+    parsed = urlparse(url)
+
+    # Normalize scheme to https if http (common redirect)
+    scheme = "https" if parsed.scheme == "http" else parsed.scheme
+
+    # Normalize netloc by removing/adding www consistently
+    netloc = parsed.netloc.lower()
+    # Remove www. for comparison
+    if netloc.startswith("www."):
+        netloc = netloc[4:]
+
+    # Remove trailing slash from path
+    path = parsed.path.rstrip("/")
+    if not path:
+        path = "/"
+
+    # Reconstruct without query/fragment for comparison
+    normalized = urlunparse((scheme, netloc, path, "", "", ""))
+
+    return normalized
 
 
 class BrowserSession:
@@ -111,9 +143,8 @@ class BrowserSession:
             logger.info(f"After navigation/auth, at: {post_nav_url}")
 
             # Compare URLs properly - normalize and check if we're at the target
-            # Remove trailing slashes for comparison
-            target_normalized = url.rstrip("/")
-            current_normalized = post_nav_url.split("?")[0].rstrip("/")
+            target_normalized = normalize_url(url)
+            current_normalized = normalize_url(post_nav_url)
 
             if target_normalized != current_normalized:
                 logger.info(f"Not at target URL, re-navigating to: {url}")
@@ -134,7 +165,7 @@ class BrowserSession:
 
                 # Check again if we made it to the target
                 final_url = self.page.url
-                final_normalized = final_url.split("?")[0].rstrip("/")
+                final_normalized = normalize_url(final_url)
 
                 if target_normalized != final_normalized:
                     logger.warning(

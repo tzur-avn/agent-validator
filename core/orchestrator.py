@@ -160,7 +160,7 @@ class Orchestrator:
             }
 
     def run_multiple_agents(
-        self, url: str, agent_names: List[str], parallel: bool = False, **kwargs
+        self, url: str, agent_names: List[str], parallel: bool = True, **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Run multiple agents on a single URL.
@@ -168,7 +168,7 @@ class Orchestrator:
         Args:
             url: URL to validate
             agent_names: List of agent names to run
-            parallel: Run agents in parallel (default: sequential)
+            parallel: Run agents in parallel (default: parallel)
             **kwargs: Additional parameters for agents
 
         Returns:
@@ -221,14 +221,14 @@ class Orchestrator:
         return results
 
     def run_targets(
-        self, targets: List[Dict[str, Any]], parallel: bool = False
+        self, targets: List[Dict[str, Any]], parallel: bool = True
     ) -> List[Dict[str, Any]]:
         """
         Run agents on multiple targets from configuration.
 
         Args:
             targets: List of target configurations
-            parallel: Run agents in parallel for each target
+            parallel: Run agents in parallel for each target (default: parallel)
 
         Returns:
             List of all results

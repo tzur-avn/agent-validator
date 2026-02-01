@@ -31,7 +31,9 @@ class HTMLReporter(BaseReporter):
     def _get_html_header(self) -> str:
         """Get HTML header with styles."""
         timestamp = (
-            f"<p>Generated: {self.get_timestamp()}</p>" if self.timestamp else ""
+            f"<p class='timestamp'>Generated: {self.get_timestamp()}</p>"
+            if self.timestamp
+            else ""
         )
 
         return f"""<!DOCTYPE html>
@@ -41,171 +43,480 @@ class HTMLReporter(BaseReporter):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Validator Report</title>
     <style>
+        :root {{
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --error: #ef4444;
+            --error-light: #fee2e2;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --info: #3b82f6;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }}
+
+        body.dark-mode {{
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --bg-tertiary: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-tertiary: #9ca3af;
+            --border: #374151;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }}
+
+        * {{
+            box-sizing: border-box;
+        }}
+
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
-            background: #f5f5f5;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
         }}
+
         .header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
-            padding: 30px;
-            border-radius: 10px;
+            padding: 40px;
+            border-radius: 16px;
             margin-bottom: 30px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
         }}
+
+        .header::before {{
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }}
+
+        @keyframes pulse {{
+            0%, 100% {{ transform: scale(1); opacity: 0.5; }}
+            50% {{ transform: scale(1.1); opacity: 0.8; }}
+        }}
+
+        .header h1 {{
+            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }}
+
+        .timestamp {{
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
+            position: relative;
+            z-index: 1;
+        }}
+
+        .dark-mode-toggle {{
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }}
+
+        .dark-mode-toggle:hover {{
+            transform: scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }}
+
         .summary {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }}
+
         .summary-card {{
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
-        .summary-card h3 {{
-            margin: 0 0 10px 0;
-            color: #666;
-            font-size: 14px;
-            text-transform: uppercase;
-        }}
-        .summary-card .value {{
-            font-size: 32px;
-            font-weight: bold;
-            color: #333;
-        }}
-        .url-section {{
-            background: white;
+            background: var(--bg-primary);
             padding: 25px;
-            border-radius: 8px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }}
+
+        .summary-card::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }}
+
+        .summary-card:hover {{
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }}
+
+        .summary-card h3 {{
+            margin: 0 0 15px 0;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }}
+
+        .summary-card .value {{
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+
+        .summary-card .icon {{
+            font-size: 2rem;
+        }}
+
+        .url-section {{
+            background: var(--bg-primary);
+            padding: 30px;
+            border-radius: 12px;
             margin-bottom: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
         }}
+
+        .url-section:hover {{
+            box-shadow: var(--shadow-lg);
+        }}
+
         .url-header {{
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 25px;
         }}
+
         .url-header h2 {{
-            margin: 0 0 10px 0;
-            color: #333;
-            font-size: 24px;
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            font-size: 1.75rem;
+            font-weight: 700;
         }}
+
         .url-header .url-link {{
-            color: #667eea;
+            color: var(--primary);
             text-decoration: none;
-            font-size: 16px;
+            font-size: 1rem;
             word-break: break-all;
+            transition: color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }}
+
         .url-header .url-link:hover {{
+            color: var(--primary-dark);
             text-decoration: underline;
         }}
+
+        .url-header .url-link::before {{
+            content: '🔗';
+            font-size: 0.9rem;
+        }}
+
         .agent-results {{
-            margin-top: 15px;
+            margin-top: 20px;
         }}
+
         .result-card {{
-            background: #f9fafb;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border-left: 4px solid #6366f1;
+            background: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--info);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
         }}
+
+        .result-card:hover {{
+            box-shadow: var(--shadow-md);
+            transform: translateX(5px);
+        }}
+
         .result-header {{
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }}
+
         .result-header h3 {{
             margin: 0;
-            color: #4b5563;
-            font-size: 18px;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
         }}
+
+        .status-badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }}
+
         .status-pass {{
-            color: #22c55e;
-            font-weight: bold;
+            background: var(--success-light);
+            color: var(--success);
         }}
+
         .status-fail {{
-            color: #ef4444;
-            font-weight: bold;
+            background: var(--error-light);
+            color: var(--error);
         }}
+
         .severity-critical {{
             color: #dc2626;
             font-weight: bold;
+            padding: 8px 12px;
+            background: #fee2e2;
+            border-radius: 6px;
+            display: inline-block;
         }}
+
         .severity-high {{
             color: #ea580c;
+            font-weight: 600;
+            padding: 8px 12px;
+            background: #ffedd5;
+            border-radius: 6px;
+            display: inline-block;
         }}
+
         .severity-medium {{
             color: #f59e0b;
+            font-weight: 600;
+            padding: 8px 12px;
+            background: var(--warning-light);
+            border-radius: 6px;
+            display: inline-block;
         }}
+
         .severity-low {{
             color: #84cc16;
+            font-weight: 600;
+            padding: 8px 12px;
+            background: #ecfccb;
+            border-radius: 6px;
+            display: inline-block;
         }}
+
         .issue {{
-            padding: 15px;
-            background: #f9fafb;
-            border-left: 4px solid #6366f1;
-            margin: 10px 0;
-            border-radius: 4px;
+            padding: 18px;
+            background: var(--bg-primary);
+            border-left: 4px solid var(--info);
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
         }}
+
+        .issue:hover {{
+            box-shadow: var(--shadow-md);
+            transform: translateX(3px);
+        }}
+
         .error {{
-            padding: 15px;
-            background: #fef2f2;
-            border-left: 4px solid #ef4444;
-            margin: 10px 0;
-            border-radius: 4px;
+            padding: 18px;
+            background: var(--error-light);
+            border-left: 4px solid var(--error);
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
         }}
+
         pre {{
             background: #1e293b;
             color: #e2e8f0;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }}
-        .page-screenshot {{
-            margin: 20px 0;
-            padding: 15px;
-            background: #f0f0f0;
+            padding: 20px;
             border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.5;
         }}
+
+        .page-screenshot {{
+            margin: 25px 0;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }}
+
         .page-screenshot h4 {{
-            margin: 0 0 10px 0;
-            color: #333;
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            font-weight: 600;
         }}
+
         .page-screenshot img {{
             max-width: 100%;
             height: auto;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.3s ease;
         }}
+
+        .page-screenshot img:hover {{
+            transform: scale(1.02);
+        }}
+
         .screenshot-toggle {{
-            background: #667eea;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
-            margin-bottom: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
         }}
+
         .screenshot-toggle:hover {{
-            background: #5a6fd6;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }}
+
+        .screenshot-toggle:active {{
+            transform: translateY(0);
+        }}
+
         .screenshot-content {{
             display: none;
+            animation: slideDown 0.3s ease;
         }}
+
         .screenshot-content.expanded {{
             display: block;
+        }}
+
+        @keyframes slideDown {{
+            from {{
+                opacity: 0;
+                transform: translateY(-10px);
+            }}
+            to {{
+                opacity: 1;
+                transform: translateY(0);
+            }}
+        }}
+
+        .collapsible-section {{
+            margin: 20px 0;
+        }}
+
+        .collapsible-header {{
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }}
+
+        .collapsible-header:hover {{
+            background: var(--bg-tertiary);
+        }}
+
+        .collapsible-arrow {{
+            transition: transform 0.3s ease;
+            font-size: 1.2rem;
+        }}
+
+        .collapsible-arrow.expanded {{
+            transform: rotate(180deg);
+        }}
+
+        @media (max-width: 768px) {{
+            body {{
+                padding: 10px;
+            }}
+
+            .header {{
+                padding: 25px;
+            }}
+
+            .header h1 {{
+                font-size: 1.75rem;
+            }}
+
+            .summary {{
+                grid-template-columns: 1fr;
+            }}
+
+            .url-section {{
+                padding: 20px;
+            }}
+
+            .result-header {{
+                flex-direction: column;
+                align-items: flex-start;
+            }}
         }}
     </style>
 </head>
 <body>
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle dark mode">🌓</button>
     <div class="header">
         <h1>🤖 Agent Validator Report</h1>
         {timestamp}
@@ -228,20 +539,20 @@ class HTMLReporter(BaseReporter):
         return f"""
     <div class="summary">
         <div class="summary-card">
-            <h3>Total Validations</h3>
-            <div class="value">{total}</div>
+            <h3>📊 Total Validations</h3>
+            <div class="value"><span class="icon">🔍</span>{total}</div>
         </div>
         <div class="summary-card">
-            <h3>Passed</h3>
-            <div class="value" style="color: #22c55e;">{passed}</div>
+            <h3>✅ Passed</h3>
+            <div class="value" style="color: #10b981;"><span class="icon">✓</span>{passed}</div>
         </div>
         <div class="summary-card">
-            <h3>Failed</h3>
-            <div class="value" style="color: #ef4444;">{failed}</div>
+            <h3>❌ Failed</h3>
+            <div class="value" style="color: #ef4444;"><span class="icon">✗</span>{failed}</div>
         </div>
         <div class="summary-card">
-            <h3>Total Issues</h3>
-            <div class="value" style="color: #f59e0b;">{total_issues}</div>
+            <h3>⚠️ Total Issues</h3>
+            <div class="value" style="color: #f59e0b;"><span class="icon">🐛</span>{total_issues}</div>
         </div>
     </div>
 """
@@ -272,8 +583,9 @@ class HTMLReporter(BaseReporter):
                 total_issues += len(result["issues"])
 
         status_class = "status-pass" if all_passed else "status-fail"
+        status_icon = "✓" if all_passed else "✗"
         status_text = (
-            "✓ ALL CHECKS PASSED" if all_passed else f"✗ {total_issues} ISSUE(S) FOUND"
+            "ALL CHECKS PASSED" if all_passed else f"{total_issues} ISSUE(S) FOUND"
         )
 
         # Generate unique ID for screenshot toggle
@@ -284,7 +596,7 @@ class HTMLReporter(BaseReporter):
         <div class="url-header">
             <h2>📄 Page Analysis</h2>
             <p><strong>URL:</strong> <a href="{url}" target="_blank" class="url-link">{url}</a></p>
-            <p class="{status_class}">{status_text}</p>
+            <p><span class="status-badge {status_class}">{status_icon} {status_text}</span></p>
         </div>
 """
 
@@ -319,18 +631,19 @@ class HTMLReporter(BaseReporter):
         url = result.get("url", "Unknown")
         success = result.get("success", False)
         status_class = "status-pass" if success else "status-fail"
-        status_text = "✓ PASSED" if success else "✗ FAILED"
+        status_icon = "✓" if success else "✗"
+        status_text = "PASSED" if success else "FAILED"
 
         html = f"""
         <div class="result-card">
             <div class="result-header">
-                <h3>{agent_name}</h3>
-                <p class="{status_class}">{status_text}</p>
+                <h3>🔬 {agent_name}</h3>
+                <span class="status-badge {status_class}">{status_icon} {status_text}</span>
             </div>
 """
 
         if result.get("error"):
-            html += f'    <div class="error"><strong>Error:</strong> {result["error"]}</div>\n'
+            html += f'    <div class="error"><strong>⚠️ Error:</strong> {result["error"]}</div>\n'
 
         # Format agent-specific data
         if result.get("errors"):
@@ -347,7 +660,7 @@ class HTMLReporter(BaseReporter):
 
     def _format_spelling_errors_html(self, errors: List[Dict[str, Any]]) -> str:
         """Format spelling errors as HTML."""
-        html = f"    <h4>Spelling Errors ({len(errors)})</h4>\n"
+        html = f"    <h4 style='color: var(--text-primary); margin: 20px 0 15px 0;'>📝 Spelling Errors ({len(errors)})</h4>\n"
 
         for error in errors:
             original = error.get("original", "")
@@ -356,8 +669,9 @@ class HTMLReporter(BaseReporter):
 
             html += f"""
             <div class="error">
-                <strong>Error:</strong> "{original}" → <strong>Correction:</strong> "{correction}"<br>
-                <em>Context:</em> "{context}"
+                <strong>Error:</strong> <code style="background: #fca5a5; padding: 2px 6px; border-radius: 3px; color: #7f1d1d;">"{original}"</code> 
+                → <strong>Correction:</strong> <code style="background: #86efac; padding: 2px 6px; border-radius: 3px; color: #14532d;">"{correction}"</code><br>
+                <em style="color: var(--text-secondary);">Context:</em> "{context}"
             </div>
 """
 
@@ -379,14 +693,20 @@ class HTMLReporter(BaseReporter):
             if severity in by_severity:
                 by_severity[severity].append((idx, issue))
 
-        html = f"    <h4>Visual Issues ({len(issues)})</h4>\n"
+        html = f"    <h4 style='color: var(--text-primary); margin: 20px 0 15px 0;'>👁️ Visual Issues ({len(issues)})</h4>\n"
 
         for severity in ["critical", "high", "medium", "low"]:
             issues_list = by_severity[severity]
             if not issues_list:
                 continue
 
-            html += f'    <h5 class="severity-{severity}">{severity.upper()} ({len(issues_list)})</h5>\n'
+            severity_emoji = {
+                "critical": "🔴",
+                "high": "🟠",
+                "medium": "🟡",
+                "low": "🟢",
+            }[severity]
+            html += f'    <h5 style="margin: 15px 0;"><span class="severity-{severity}">{severity_emoji} {severity.upper()} ({len(issues_list)})</span></h5>\n'
 
             for idx, issue in issues_list:
                 issue_type = issue.get("type", "unknown").upper()
@@ -396,18 +716,25 @@ class HTMLReporter(BaseReporter):
 
                 html += f"""
             <div class="issue">
-                <strong>[{issue_type}]</strong> {issue_desc}<br>
-                <strong>Location:</strong> {location}<br>
-                <strong>Fix:</strong> {recommendation}"""
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: var(--primary);">[{issue_type}]</strong> 
+                    <span style="color: var(--text-primary);">{issue_desc}</span>
+                </div>
+                <div style="color: var(--text-secondary); margin-bottom: 8px;">
+                    <strong>📍 Location:</strong> {location}
+                </div>
+                <div style="color: var(--text-secondary);">
+                    <strong>💡 Fix:</strong> {recommendation}
+                </div>"""
 
                 # Add element screenshot if available
                 if idx in element_screenshots:
                     screenshot_b64 = element_screenshots[idx]
                     html += f"""
-                <div style="margin-top: 10px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                    <strong>Screenshot:</strong><br>
+                <div style="margin-top: 15px; padding: 15px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px;">
+                    <strong style="color: var(--text-primary);">📸 Screenshot:</strong><br>
                     <img src="data:image/png;base64,{screenshot_b64}" 
-                         style="max-width: 100%; height: auto; border: 1px solid #ccc; margin-top: 5px; border-radius: 4px;" 
+                         style="max-width: 100%; height: auto; border: 2px solid var(--border); margin-top: 10px; border-radius: 8px; box-shadow: var(--shadow-md);" 
                          alt="Issue screenshot">
                 </div>"""
 
@@ -420,6 +747,10 @@ class HTMLReporter(BaseReporter):
     def _get_html_footer(self) -> str:
         """Get HTML footer."""
         return """
+    <footer style="text-align: center; padding: 40px 20px; color: var(--text-tertiary); margin-top: 40px; border-top: 2px solid var(--border);">
+        <p style="margin: 0 0 10px 0; font-size: 0.875rem;">Generated by <strong>Agent Validator</strong></p>
+        <p style="margin: 0; font-size: 0.75rem;">🤖 Powered by AI-driven website validation</p>
+    </footer>
     <script>
         function toggleScreenshot(id) {
             const content = document.getElementById(id);
@@ -432,6 +763,37 @@ class HTMLReporter(BaseReporter):
                 button.textContent = '📷 Hide Page Screenshot';
             }
         }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+        }
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Add smooth scroll behavior
+        document.documentElement.style.scrollBehavior = 'smooth';
+
+        // Add intersection observer for fade-in animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.url-section, .result-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
     </script>
 </body>
 </html>

@@ -98,7 +98,9 @@ Examples:
 
     # Execution options
     parser.add_argument(
-        "--parallel", action="store_true", help="Run agents in parallel"
+        "--sequential",
+        action="store_true",
+        help="Run agents sequentially instead of parallel (default: parallel)",
     )
 
     # Logging options
@@ -236,7 +238,7 @@ def main():
 
             logger.info(f"Running {len(agent_names)} agents on {args.url}")
             results = orchestrator.run_multiple_agents(
-                args.url, agent_names, parallel=args.parallel, **kwargs
+                args.url, agent_names, parallel=not args.sequential, **kwargs
             )
         else:
             # Config file mode with targets
@@ -246,7 +248,7 @@ def main():
                 sys.exit(1)
 
             logger.info(f"Running validation on {len(targets)} targets")
-            results = orchestrator.run_targets(targets, parallel=args.parallel)
+            results = orchestrator.run_targets(targets, parallel=not args.sequential)
 
         # Generate report
         output_format = args.format or config.get_output_config().get("format", "text")
@@ -265,10 +267,14 @@ def main():
             output_path = output_dir / filename
 
             reporter.save_report(report_content, str(output_path))
-            logger.info(f"Report saved to {output_path}")
+            logger.info(f"Report saved to {output_path.absolute()}")
 
             if not args.quiet:
-                print(f"\n✓ Report saved to: {output_path}")
+                # Create clickable file:// link for terminal
+                file_url = output_path.absolute().as_uri()
+                print(
+                    f"\n✓ Report saved to: \033]8;;{file_url}\033\\{output_path.absolute()}\033]8;;\033\\"
+                )
         else:
             # Print to console
             if not args.quiet or output_format != "text":
