@@ -24,22 +24,29 @@ agents:
 
 # Use 'urls' (plural) to specify multiple URLs with the same auth config
 # The system will authenticate once and reuse the session across all URLs
+
+# targets:
+#   - urls:
+#       - "http://localhost:3001/customer-center"
+#       - "http://localhost:3001/reports"
+#       - "http://localhost:3001/settings"
+#     agents:
+#       - spell_checker
+#       - visual_qa
+#     auth:
+#       type: form
+#       username: "${AUTH_USERNAME}"
+#       password: "${AUTH_PASSWORD}"
+#       selectors:
+#         username: 'input[type="text"]'
+#         password: 'input[type="password"]'
+#         submit: 'button[type="submit"]'
+
 targets:
-  - urls:
-      - "http://localhost:3001/customer-center"
-      - "http://localhost:3001/reports"
-      - "http://localhost:3001/settings"
+  - url: "http://bbc.com"
     agents:
       - spell_checker
       - visual_qa
-    auth:
-      type: form
-      username: "${AUTH_USERNAME}"
-      password: "${AUTH_PASSWORD}"
-      selectors:
-        username: 'input[type="text"]'
-        password: 'input[type="password"]'
-        submit: 'button[type="submit"]'
 
 output:
   format: html
