@@ -62,9 +62,9 @@ def setup_logging(
         root_logger.addHandler(file_handler)
 
     # Suppress noisy third-party loggers
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("playwright").setLevel(logging.WARNING)
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    for logger_name in ["urllib3", "httpx", "httpcore", "asyncio"]:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+    logging.getLogger("playwright").setLevel(logging.ERROR)
 
     logger = logging.getLogger(__name__)
     logger.debug(f"Logging configured: level={log_level}, file={log_file}")

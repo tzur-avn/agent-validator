@@ -23,19 +23,33 @@ targets:
   - url: "https://www.example.com"
     agents: ["spell_checker", "visual_qa"]
   
-  # Example with authentication
+  # Example with form-based authentication using single URL
   - url: "http://localhost:3001/customer-center"
     agents: ["spell_checker", "visual_qa"]
     auth:
       type: "form"  # Options: "form" or "basic"
-      username: "admin"
-      password: "password123"  # Can use environment variable: "${PASSWORD}"
-      login_url: "http://localhost:3001/auth"  # Optional, defaults to target url
+      username: "${AUTH_USERNAME}"  # Use environment variables for security
+      password: "${AUTH_PASSWORD}"  # export AUTH_USERNAME=admin
       selectors:  # Required for form-based auth
-        username_field: "input[name='username']"
-        password_field: "input[name='password']"
-        submit_button: "button[type='submit']"
-      wait_after_login: 2000  # Milliseconds to wait after login (optional)
+        username: "input[name='username']"
+        password: "input[name='password']"
+        submit: "button[type='submit']"
+  
+  # Example with multiple URLs sharing the same authentication
+  # Use 'urls' (plural) to list multiple URLs - much cleaner!
+  - urls:
+      - "http://localhost:3001/dashboard"
+      - "http://localhost:3001/reports"
+      - "http://localhost:3001/settings"
+    agents: ["spell_checker", "visual_qa"]
+    auth:
+      type: "form"
+      username: "${AUTH_USERNAME}"
+      password: "${AUTH_PASSWORD}"
+      selectors:
+        username: "input[name='username']"
+        password: "input[name='password']"
+        submit: "button[type='submit']"
   
   # Example with HTTP Basic Authentication
   - url: "https://secure.example.com/admin"

@@ -3,7 +3,7 @@
 import operator
 import logging
 from pathlib import Path
-from typing import Annotated, List, TypedDict, Dict, Any
+from typing import Annotated, List, TypedDict, Dict, Any, Optional
 
 from langgraph.graph import StateGraph, END
 
@@ -20,8 +20,10 @@ class SpellCheckerState(TypedDict):
 
     url: str
     raw_text: str
+    screenshot: str  # Full page screenshot base64
     errors: Annotated[List[dict], operator.add]
     report: str
+    auth: Optional[Dict[str, Any]]  # Authentication configuration
 
 
 class SpellCheckerAgent(BaseAgent):
@@ -71,6 +73,7 @@ class SpellCheckerAgent(BaseAgent):
         return {
             "url": url,
             "raw_text": "",
+            "screenshot": "",
             "errors": [],
             "report": "",
             "auth": kwargs.get("auth"),  # Pass auth config to state
@@ -86,12 +89,14 @@ class SpellCheckerAgent(BaseAgent):
         with BrowserSession(auth=auth_config) as browser:
             browser.navigate(state["url"])
             visible_text = browser.get_text(wait_time=self.wait_time)
+            # Capture full page screenshot
+            screenshot_b64 = browser.take_screenshot(full_page=True, wait_time=1000)
 
         # Clean and limit text
         clean = clean_text(visible_text, max_length=self.max_text_length)
         logger.debug(f"Extracted {len(clean)} characters")
 
-        return {"raw_text": clean}
+        return {"raw_text": clean, "screenshot": screenshot_b64}
 
     def analyze_text_node(self, state: SpellCheckerState) -> Dict[str, List[dict]]:
         """Analyze text for spelling and grammar errors."""

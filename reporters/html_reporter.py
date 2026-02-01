@@ -1,5 +1,6 @@
 """HTML reporter for interactive dashboards."""
 
+import hashlib
 from typing import Dict, Any, List
 from reporters.base_reporter import BaseReporter
 
@@ -129,6 +130,42 @@ class HTMLReporter(BaseReporter):
             border-radius: 4px;
             overflow-x: auto;
         }}
+        .page-screenshot {{
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }}
+        .page-screenshot h4 {{
+            margin: 0 0 10px 0;
+            color: #333;
+        }}
+        .page-screenshot img {{
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }}
+        .screenshot-toggle {{
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }}
+        .screenshot-toggle:hover {{
+            background: #5a6fd6;
+        }}
+        .screenshot-content {{
+            display: none;
+        }}
+        .screenshot-content.expanded {{
+            display: block;
+        }}
     </style>
 </head>
 <body>
@@ -180,12 +217,27 @@ class HTMLReporter(BaseReporter):
         status_class = "status-pass" if success else "status-fail"
         status_text = "✓ PASSED" if success else "✗ FAILED"
 
+        # Generate unique ID for screenshot toggle
+        screenshot_id = hashlib.md5(f"{agent_name}-{url}".encode()).hexdigest()[:8]
+
         html = f"""
     <div class="result-card">
         <div class="result-header">
             <h2>{agent_name}</h2>
             <p><strong>URL:</strong> <a href="{url}" target="_blank">{url}</a></p>
             <p class="{status_class}">{status_text}</p>
+        </div>
+"""
+
+        # Add full page screenshot if available
+        screenshot = result.get("screenshot", "")
+        if screenshot:
+            html += f"""
+        <div class="page-screenshot">
+            <button class="screenshot-toggle" onclick="toggleScreenshot('screenshot-{screenshot_id}')">📷 Show Page Screenshot</button>
+            <div id="screenshot-{screenshot_id}" class="screenshot-content">
+                <img src="data:image/png;base64,{screenshot}" alt="Full page screenshot of {url}">
+            </div>
         </div>
 """
 
@@ -280,6 +332,19 @@ class HTMLReporter(BaseReporter):
     def _get_html_footer(self) -> str:
         """Get HTML footer."""
         return """
+    <script>
+        function toggleScreenshot(id) {
+            const content = document.getElementById(id);
+            const button = content.previousElementSibling;
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                button.textContent = '📷 Show Page Screenshot';
+            } else {
+                content.classList.add('expanded');
+                button.textContent = '📷 Hide Page Screenshot';
+            }
+        }
+    </script>
 </body>
 </html>
 """

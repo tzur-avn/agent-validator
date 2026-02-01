@@ -1,6 +1,7 @@
 """Configuration loader and validator."""
 
 import os
+import re
 import yaml
 import logging
 from typing import Dict, Any, List, Optional
@@ -62,8 +63,18 @@ class Config:
         # Validate targets section
         if "targets" in self._config:
             for target in self._config["targets"]:
+                # Support both 'url' (single) and 'urls' (array)
                 if "url" in target:
                     validate_url(target["url"])
+                elif "urls" in target:
+                    if not isinstance(target["urls"], list):
+                        raise ConfigurationError(
+                            "Target 'urls' field must be a list of URLs"
+                        )
+                    for url in target["urls"]:
+                        validate_url(url)
+                else:
+                    raise ConfigurationError("Target missing 'url' or 'urls' field")
 
                 # Validate auth configuration if present
                 if "auth" in target:
@@ -180,10 +191,40 @@ class ConfigLoader:
         except Exception as e:
             raise ConfigurationError(f"Failed to load config file: {e}")
 
-        # Apply environment variable overrides
-        config_dict = cls._apply_env_overrides(config_dict)
+        # Resolve environment variable placeholders (${VAR_NAME} patterns)
+        config_dict = cls._resolve_env_vars(config_dict)
 
         return Config(config_dict)
+
+    @classmethod
+    def _resolve_env_vars(cls, value: Any) -> Any:
+        """
+        Recursively resolve ${ENV_VAR} placeholders in configuration values.
+
+        Args:
+            value: Configuration value (can be dict, list, or scalar)
+
+        Returns:
+            Value with environment variables resolved
+        """
+        if isinstance(value, dict):
+            return {k: cls._resolve_env_vars(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [cls._resolve_env_vars(item) for item in value]
+        elif isinstance(value, str):
+            # Match ${VAR_NAME} pattern
+            pattern = r"\$\{([^}]+)\}"
+
+            def replace_env_var(match):
+                var_name = match.group(1)
+                env_value = os.environ.get(var_name, "")
+                if not env_value:
+                    logger.warning(f"Environment variable {var_name} not set")
+                return env_value
+
+            return re.sub(pattern, replace_env_var, value)
+        else:
+            return value
 
     @classmethod
     def _find_config_file(cls) -> Optional[Path]:
@@ -193,24 +234,6 @@ class ConfigLoader:
             if path.exists():
                 return path
         return None
-
-    @staticmethod
-    def _apply_env_overrides(config_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """Apply environment variable overrides to configuration."""
-        # Override GOOGLE_API_KEY if set
-        if "GOOGLE_API_KEY" in os.environ:
-            # This is already handled by langchain, but we could add it to config if needed
-            pass
-
-        # Override OPENAI_API_KEY if set
-        if "OPENAI_API_KEY" in os.environ:
-            # This is already handled by langchain-openai
-            pass
-
-        # Add support for other env var overrides as needed
-        # Example: AGENT_VALIDATOR_MODEL, AGENT_VALIDATOR_TEMPERATURE, etc.
-
-        return config_dict
 
     @staticmethod
     def _get_default_config() -> Dict[str, Any]:

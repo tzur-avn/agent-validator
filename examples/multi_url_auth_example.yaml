@@ -1,0 +1,40 @@
+# Multi-URL Authentication Example
+# Demonstrates validating multiple pages under the same authentication session
+
+agents:
+  spell_checker:
+    enabled: true
+    model: gemini-2.5-flash
+    temperature: 0
+    max_text_length: 50000
+  
+  visual_qa:
+    enabled: true
+    model: gemini-2.5-flash
+    temperature: 0
+    viewport_width: 1920
+    viewport_height: 1080
+
+# Use 'urls' (plural) to specify multiple URLs with the same auth config
+# The system will authenticate once and reuse the session across all URLs
+targets:
+  - urls:
+      - "http://localhost:3001/customer-center"
+      - "http://localhost:3001/dashboard"
+      - "http://localhost:3001/reports"
+      - "http://localhost:3001/settings"
+    agents:
+      - spell_checker
+      - visual_qa
+    auth:
+      type: form
+      username: "${AUTH_USERNAME}"
+      password: "${AUTH_PASSWORD}"
+      selectors:
+        username: 'input[name="username"]'
+        password: 'input[name="password"]'
+        submit: 'button[type="submit"]'
+
+output:
+  format: html
+  path: reports/

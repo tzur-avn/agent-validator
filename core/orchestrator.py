@@ -1,5 +1,6 @@
 """Orchestrator for running multiple agents."""
 
+import json
 import logging
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -101,12 +102,10 @@ class Orchestrator:
 
             # Set up progress tracking
             if self.progress_tracker:
-                # Extract domain from URL for cleaner display
-                from urllib.parse import urlparse
                 from rich.markup import escape
 
-                parsed_url = urlparse(url)
-                display_url = parsed_url.netloc or url
+                # Use full URL for better clarity
+                display_url = url
 
                 # Escape the agent name and URL to prevent markup interpretation
                 escaped_agent = escape(f"[{agent.name}]")
@@ -146,6 +145,7 @@ class Orchestrator:
                 "errors": result.get("errors", []),
                 "issues": result.get("issues", []),
                 "element_screenshots": result.get("element_screenshots", {}),
+                "screenshot": result.get("screenshot", ""),  # Full page screenshot
                 "raw_result": result,
             }
 
@@ -235,34 +235,124 @@ class Orchestrator:
         """
         all_results = []
 
-        for target in targets:
-            url = target.get("url")
-            if not url:
-                logger.warning("Target missing URL, skipping")
-                continue
+        # Expand targets with urls arrays into individual targets
+        expanded_targets = self._expand_url_lists(targets)
 
-            agent_names = target.get("agents", [])
-            if not agent_names:
-                # Use all enabled agents
-                agent_names = [
-                    name
-                    for name, config in self.config.get("agents", {}).items()
-                    if config.get("enabled", True)
-                ]
+        # Group targets by authentication configuration to reuse sessions
+        auth_groups = self._group_targets_by_auth(expanded_targets)
 
-            # Extract auth configuration from target
-            auth_config = target.get("auth")
-            kwargs = {}
-            if auth_config:
-                kwargs["auth"] = auth_config
+        for auth_key, grouped_targets in auth_groups.items():
+            if auth_key == "no_auth":
+                logger.info(
+                    f"Processing {len(grouped_targets)} targets without authentication"
+                )
+            else:
+                logger.info(
+                    f"Processing {len(grouped_targets)} targets with shared authentication session"
+                )
 
-            logger.info(f"Processing target: {url}")
-            results = self.run_multiple_agents(
-                url, agent_names, parallel=parallel, **kwargs
-            )
-            all_results.extend(results)
+            # Process all URLs in the same auth group
+            for target in grouped_targets:
+                url = target.get("url")
+                if not url:
+                    logger.warning("Target missing URL, skipping")
+                    continue
+
+                agent_names = target.get("agents", [])
+                if not agent_names:
+                    # Use all enabled agents
+                    agent_names = [
+                        name
+                        for name, config in self.config.get("agents", {}).items()
+                        if config.get("enabled", True)
+                    ]
+
+                # Extract auth configuration from target
+                auth_config = target.get("auth")
+                kwargs = {}
+                if auth_config:
+                    kwargs["auth"] = auth_config
+
+                logger.info(f"Processing target: {url}")
+                results = self.run_multiple_agents(
+                    url, agent_names, parallel=parallel, **kwargs
+                )
+                all_results.extend(results)
 
         return all_results
+
+    def _expand_url_lists(self, targets: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Expand targets with 'urls' arrays into individual target entries.
+
+        Args:
+            targets: List of target configurations
+
+        Returns:
+            Expanded list of targets with single URLs
+        """
+        expanded = []
+
+        for target in targets:
+            # Handle 'urls' (plural) - array of URLs
+            if "urls" in target:
+                url_list = target["urls"]
+                if not isinstance(url_list, list):
+                    url_list = [url_list]
+
+                # Create a separate target for each URL
+                for url in url_list:
+                    target_copy = target.copy()
+                    target_copy["url"] = url
+                    # Remove 'urls' key to avoid confusion
+                    target_copy.pop("urls", None)
+                    expanded.append(target_copy)
+
+            # Handle 'url' (singular) - single URL
+            elif "url" in target:
+                expanded.append(target)
+
+            else:
+                # No URL specified, skip
+                logger.warning(
+                    f"Target missing both 'url' and 'urls' fields, skipping: {target}"
+                )
+
+        return expanded
+
+    def _group_targets_by_auth(
+        self, targets: List[Dict[str, Any]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Group targets by their authentication configuration.
+
+        Targets with identical auth configs will share a browser session.
+
+        Args:
+            targets: List of target configurations
+
+        Returns:
+            Dictionary mapping auth keys to lists of targets
+        """
+        auth_groups: Dict[str, List[Dict[str, Any]]] = {}
+
+        for target in targets:
+            auth_config = target.get("auth")
+
+            if not auth_config:
+                # No authentication
+                auth_key = "no_auth"
+            else:
+                # Create a deterministic key from auth config
+                # Sort keys to ensure consistent hashing
+                auth_key = json.dumps(auth_config, sort_keys=True)
+
+            if auth_key not in auth_groups:
+                auth_groups[auth_key] = []
+
+            auth_groups[auth_key].append(target)
+
+        return auth_groups
 
     def get_summary(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """

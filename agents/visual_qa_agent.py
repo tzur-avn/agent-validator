@@ -3,7 +3,7 @@
 import operator
 import logging
 from pathlib import Path
-from typing import Annotated, List, TypedDict, Dict, Any
+from typing import Annotated, List, TypedDict, Dict, Any, Optional
 
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import HumanMessage
@@ -25,6 +25,7 @@ class VisualQAState(TypedDict):
     issues: Annotated[List[dict], operator.add]
     report: str
     element_screenshots: Dict[int, str]  # index -> base64 screenshot
+    auth: Optional[Dict[str, Any]]  # Authentication configuration
 
 
 class VisualQAAgent(BaseAgent):

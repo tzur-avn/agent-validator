@@ -189,6 +189,111 @@ submit: 'form button.primary'
 3. Browser navigates to target URL
 4. Continues with validation
 
+## Session Reuse Across Multiple URLs
+
+When validating multiple URLs that require the same authentication, the system automatically groups them and reuses the authenticated session.
+
+### How It Works
+
+The orchestrator:
+1. **Groups targets** by identical authentication configuration
+2. **Authenticates once** for each group
+3. **Reuses the session** for all URLs in that group
+4. **Processes URLs sequentially** within each auth group
+
+This means you only log in once, even when validating dozens of pages!
+
+### Configuration Example
+
+```yaml
+targets:
+  # First page - authentication happens here
+  - url: "http://localhost:3001/customer-center"
+    agents: ["spell_checker", "visual_qa"]
+    auth:
+      type: form
+      username: "${AUTH_USERNAME}"
+      password: "${AUTH_PASSWORD}"
+      selectors:
+        username: 'input[name="username"]'
+        password: 'input[name="password"]'
+        submit: 'button[type="submit"]'
+
+  # Second page - session reused (no re-login)
+  - url: "http://localhost:3001/dashboard"
+    agents: ["visual_qa"]
+    auth:
+      type: form
+      username: "${AUTH_USERNAME}"
+      password: "${AUTH_PASSWORD}"
+      selectors:
+        username: 'input[name="username"]'
+        password: 'input[name="password"]'
+        submit: 'button[type="submit"]'
+
+  # Third page - session reused (no re-login)
+  - url: "http://localhost:3001/reports"
+    agents: ["spell_checker"]
+    auth:
+      type: form
+      username: "${AUTH_USERNAME}"
+      password: "${AUTH_PASSWORD}"
+      selectors:
+        username: 'input[name="username"]'
+        password: 'input[name="password"]'
+        submit: 'button[type="submit"]'
+```
+
+**Simpler syntax using `urls` array:**
+
+```yaml
+targets:
+  # All URLs share the same auth - much cleaner!
+  - urls:
+      - "http://localhost:3001/customer-center"
+      - "http://localhost:3001/dashboard"
+      - "http://localhost:3001/reports"
+    agents: ["spell_checker", "visual_qa"]
+    auth:
+      type: form
+      username: "${AUTH_USERNAME}"
+      password: "${AUTH_PASSWORD}"
+      selectors:
+        username: 'input[name="username"]'
+        password: 'input[name="password"]'
+        submit: 'button[type="submit"]'
+```
+
+**Result:** Login happens once, all pages are validated in the same authenticated session.
+
+### Benefits
+
+- **Faster validation** - No repeated logins
+- **More realistic** - Simulates actual user navigation
+- **Session state preserved** - Cookies, tokens, and state maintained across pages
+- **Reduced load** - Fewer authentication requests to your server
+
+### Requirements for Session Reuse
+
+For URLs to share a session, their auth configurations must be **identical**:
+- Same `type` (form or basic)
+- Same `username` and `password`
+- Same `selectors` (for form auth)
+
+**Different auth = new session:**
+```yaml
+# These will NOT share a session (different usernames)
+- url: "http://site.com/admin"
+  auth:
+    username: "admin"
+    password: "pass123"
+
+- url: "http://site.com/user"  
+  auth:
+    username: "user"  # Different username = new session
+    password: "pass123"
+```
+
 ## Examples
 
 ### Example 1: Testing Authenticated Dashboard

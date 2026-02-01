@@ -22,11 +22,11 @@ targets:
       - visual_qa
     auth:
       type: form
-      username: "${TEST_EMAIL}"
-      password: "${TEST_PASSWORD}"
+      username: "${AUTH_USERNAME}"
+      password: "${AUTH_PASSWORD}"
       selectors:
-        username: 'input[name="username"]'
-        password: 'input[name="password"]'
+        username: 'input[type="text"]'
+        password: 'input[type="password"]'
         submit: 'button[type="submit"]'
 
 output:

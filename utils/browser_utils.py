@@ -2,7 +2,6 @@
 
 import base64
 import logging
-import os
 from typing import Optional, Dict, Any
 from playwright.sync_api import sync_playwright, Browser, Page, Playwright
 from core.exceptions import BrowserError
@@ -48,8 +47,8 @@ class BrowserSession:
             context_options = {"viewport": self.viewport}
             if self.auth and self.auth.get("type") == "basic":
                 context_options["http_credentials"] = {
-                    "username": self._resolve_env_var(self.auth.get("username", "")),
-                    "password": self._resolve_env_var(self.auth.get("password", "")),
+                    "username": self.auth.get("username", ""),
+                    "password": self.auth.get("password", ""),
                 }
                 logger.debug("Configured HTTP Basic Authentication")
 
@@ -92,13 +91,65 @@ class BrowserSession:
             logger.info(f"Navigating to {url}")
             self.page.goto(url, wait_until=wait_until, timeout=self.timeout)
 
-            # Perform form-based authentication if configured and not already authenticated
+            # Get the current URL after navigation - it might have redirected to login
+            current_url = self.page.url
+            logger.info(f"Page loaded at: {current_url}")
+
+            # Check if we need to authenticate (first time only)
             if (
                 self.auth
                 and self.auth.get("type") == "form"
                 and not self._authenticated
             ):
+                # Perform authentication
                 self.authenticate()
+
+            # After authentication (or if already authenticated), check if we're at the target URL
+            # This handles the case where the site redirects to login even after auth cookie is set
+            # (e.g., when opening a new browser session)
+            post_nav_url = self.page.url
+            logger.info(f"After navigation/auth, at: {post_nav_url}")
+
+            # Compare URLs properly - normalize and check if we're at the target
+            # Remove trailing slashes for comparison
+            target_normalized = url.rstrip("/")
+            current_normalized = post_nav_url.split("?")[0].rstrip("/")
+
+            if target_normalized != current_normalized:
+                logger.info(f"Not at target URL, re-navigating to: {url}")
+                self.page.goto(url, wait_until=wait_until, timeout=self.timeout)
+
+                # Wait for the page to fully load after re-navigation
+                # This helps with SPAs that need time to render after URL change
+                try:
+                    self.page.wait_for_load_state("networkidle", timeout=10000)
+                except:
+                    # If networkidle times out, give it a bit more time
+                    self.page.wait_for_timeout(2000)
+
+                # For SPAs: Wait for login form to actually disappear from DOM
+                # This is crucial because URL can change before React re-renders
+                if self.auth and self.auth.get("type") == "form":
+                    self._wait_for_login_form_to_disappear()
+
+                # Check again if we made it to the target
+                final_url = self.page.url
+                final_normalized = final_url.split("?")[0].rstrip("/")
+
+                if target_normalized != final_normalized:
+                    logger.warning(
+                        f"Still not at target URL after re-navigation. "
+                        f"Target: {url}, Current: {final_url}. "
+                        f"This might indicate authentication issues."
+                    )
+                else:
+                    logger.info(f"Now at target URL: {final_url}")
+            else:
+                logger.info("Already at target URL")
+                # Even if URL is correct, for SPAs we need to wait for content to render
+                # after authentication completes
+                if self.auth and self.auth.get("type") == "form":
+                    self._wait_for_login_form_to_disappear()
 
         except Exception as e:
             raise BrowserError(f"Failed to navigate to {url}: {e}")
@@ -174,7 +225,7 @@ class BrowserSession:
                     logger.debug(f"Element screenshot captured for {selector}")
                     return screenshot_b64
                 else:
-                    logger.warning(f"Element not found: {selector}")
+                    logger.debug(f"Element not found: {selector}")
                     return None
             elif clip_region:
                 # Screenshot specific region
@@ -183,15 +234,49 @@ class BrowserSession:
                 logger.debug(f"Region screenshot captured")
                 return screenshot_b64
             else:
-                logger.warning("No selector or clip region provided")
+                logger.debug("No selector or clip region provided")
                 return None
         except Exception as e:
-            logger.warning(f"Failed to take element screenshot: {e}")
+            logger.debug(f"Failed to take element screenshot: {e}")
             return None
 
     def get_viewport_size(self) -> Dict[str, int]:
         """Get current viewport size."""
         return self.viewport.copy()
+
+    def _wait_for_login_form_to_disappear(self, timeout: int = 5000) -> None:
+        """
+        Wait for login form elements to disappear from the DOM.
+
+        This is crucial for SPAs where URL changes before React/Vue re-renders.
+        We check for password fields specifically since they're unique to login forms.
+
+        Args:
+            timeout: Maximum time to wait in milliseconds
+        """
+        if not self.page:
+            return
+
+        selectors = self.auth.get("selectors", {}) if self.auth else {}
+        password_selector = selectors.get(
+            "password", selectors.get("password_field", "input[type='password']")
+        )
+
+        try:
+            # Wait for password field to be hidden/detached - this is the most
+            # reliable indicator we've left the login page (other pages rarely have password fields)
+            self.page.wait_for_selector(
+                password_selector, state="hidden", timeout=timeout
+            )
+            logger.info("Login form no longer visible - page content ready")
+        except:
+            # Check if password field still exists
+            if self.page.query_selector(password_selector):
+                logger.warning(
+                    "Login form (password field) still visible - page may not have rendered correctly"
+                )
+            else:
+                logger.info("Login form not found - page content ready")
 
     def authenticate(self) -> None:
         """
@@ -215,29 +300,37 @@ class BrowserSession:
             auth_config = self.auth
             selectors = auth_config.get("selectors", {})
 
-            # Navigate to login page if specified
-            login_url = auth_config.get("login_url")
-            if login_url and self.page.url != login_url:
-                logger.info(f"Navigating to login page: {login_url}")
-                self.page.goto(
-                    login_url, wait_until="domcontentloaded", timeout=self.timeout
-                )
+            # Get credentials (already resolved by config_loader)
+            username = auth_config.get("username", "")
+            password = auth_config.get("password", "")
 
-            # Get credentials (resolve environment variables)
-            username = self._resolve_env_var(auth_config.get("username", ""))
-            password = self._resolve_env_var(auth_config.get("password", ""))
-
-            # Default selectors if not provided
+            # Selectors for form fields
             username_selector = selectors.get(
-                "username_field",
-                "input[name='username'], input[type='email'], input[name='email']",
+                "username", selectors.get("username_field", "input[name='username']")
             )
             password_selector = selectors.get(
-                "password_field", "input[name='password'], input[type='password']"
+                "password", selectors.get("password_field", "input[name='password']")
             )
             submit_selector = selectors.get(
-                "submit_button", "button[type='submit'], input[type='submit']"
+                "submit", selectors.get("submit_button", "button[type='submit']")
             )
+
+            logger.info("Waiting for login form to appear...")
+
+            # Wait for the username field to be visible (indicates we're on login page)
+            # Use a shorter timeout - if form doesn't appear, we might already be logged in
+            try:
+                self.page.wait_for_selector(
+                    username_selector, timeout=5000, state="visible"
+                )
+            except Exception as e:
+                logger.info(
+                    f"Login form not found - assuming already authenticated: {e}"
+                )
+                self._authenticated = True
+                # Don't return here - the navigate method will handle re-navigation
+                # to the target URL if needed
+                return
 
             logger.info("Filling login form")
 
@@ -253,13 +346,34 @@ class BrowserSession:
             self.page.click(submit_selector)
             logger.debug(f"Clicked submit button: {submit_selector}")
 
-            # Wait for navigation or specified time
-            wait_time = auth_config.get("wait_after_login", 2000)
+            # Wait for navigation to complete after login
+            wait_time = auth_config.get("wait_after_login", 5000)
             try:
-                self.page.wait_for_load_state("domcontentloaded", timeout=wait_time)
+                # Wait for URL to change away from auth page
+                self.page.wait_for_url(
+                    lambda url: "/auth" not in url, timeout=wait_time
+                )
+                logger.info("Login successful - redirected away from auth page")
             except:
-                # If navigation doesn't happen, just wait the specified time
-                self.page.wait_for_timeout(wait_time)
+                # URL didn't change - login might have failed
+                logger.warning(
+                    f"URL did not change after login - still at {self.page.url}"
+                )
+                # Wait a bit more and check for error messages
+                self.page.wait_for_timeout(1000)
+
+                # Check if there's an error message on the page
+                page_text = self.page.inner_text("body").lower()
+                if (
+                    "error" in page_text
+                    or "invalid" in page_text
+                    or "incorrect" in page_text
+                    or "failed" in page_text
+                ):
+                    logger.error("Login failed - error message detected on page")
+                    raise BrowserError(
+                        "Authentication failed - invalid credentials or login error"
+                    )
 
             self._authenticated = True
             logger.info("Authentication successful")
@@ -267,29 +381,3 @@ class BrowserSession:
         except Exception as e:
             logger.error(f"Authentication failed: {e}")
             raise BrowserError(f"Failed to authenticate: {e}")
-
-    def _resolve_env_var(self, value: str) -> str:
-        """
-        Resolve environment variable in string format ${VAR_NAME}.
-
-        Args:
-            value: String that may contain ${VAR_NAME}
-
-        Returns:
-            Resolved string
-        """
-        if not value or not isinstance(value, str):
-            return value
-
-        # Check if value is in format ${VAR_NAME}
-        if value.startswith("${") and value.endswith("}"):
-            var_name = value[2:-1]
-            resolved = os.getenv(var_name)
-            if resolved is None:
-                logger.warning(
-                    f"Environment variable {var_name} not found, using empty string"
-                )
-                return ""
-            return resolved
-
-        return value
