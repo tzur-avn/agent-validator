@@ -246,7 +246,9 @@ class HTMLReporter(BaseReporter):
     </div>
 """
 
-    def _group_results_by_url(self, results: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    def _group_results_by_url(
+        self, results: List[Dict[str, Any]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Group results by URL."""
         grouped = {}
         for result in results:
@@ -256,7 +258,9 @@ class HTMLReporter(BaseReporter):
             grouped[url].append(result)
         return grouped
 
-    def _format_url_section_html(self, url: str, url_results: List[Dict[str, Any]]) -> str:
+    def _format_url_section_html(
+        self, url: str, url_results: List[Dict[str, Any]]
+    ) -> str:
         """Format a URL section with all its agent results."""
         # Calculate overall status for this URL
         all_passed = all(r.get("success", False) for r in url_results)
@@ -268,7 +272,9 @@ class HTMLReporter(BaseReporter):
                 total_issues += len(result["issues"])
 
         status_class = "status-pass" if all_passed else "status-fail"
-        status_text = "✓ ALL CHECKS PASSED" if all_passed else f"✗ {total_issues} ISSUE(S) FOUND"
+        status_text = (
+            "✓ ALL CHECKS PASSED" if all_passed else f"✗ {total_issues} ISSUE(S) FOUND"
+        )
 
         # Generate unique ID for screenshot toggle
         screenshot_id = hashlib.md5(url.encode()).hexdigest()[:8]
@@ -305,7 +311,9 @@ class HTMLReporter(BaseReporter):
 
         return html
 
-    def _format_result_html(self, result: Dict[str, Any], include_url: bool = True) -> str:
+    def _format_result_html(
+        self, result: Dict[str, Any], include_url: bool = True
+    ) -> str:
         """Format a single result as HTML."""
         agent_name = result.get("agent", "Unknown")
         url = result.get("url", "Unknown")
@@ -322,9 +330,7 @@ class HTMLReporter(BaseReporter):
 """
 
         if result.get("error"):
-            html += (
-                f'    <div class="error"><strong>Error:</strong> {result["error"]}</div>\n'
-            )
+            html += f'    <div class="error"><strong>Error:</strong> {result["error"]}</div>\n'
 
         # Format agent-specific data
         if result.get("errors"):
@@ -358,7 +364,9 @@ class HTMLReporter(BaseReporter):
         return html
 
     def _format_visual_issues_html(
-        self, issues: List[Dict[str, Any]], element_screenshots: Dict[int, str] | None = None
+        self,
+        issues: List[Dict[str, Any]],
+        element_screenshots: Dict[int, str] | None = None,
     ) -> str:
         """Format visual issues as HTML."""
         if element_screenshots is None:
