@@ -86,9 +86,6 @@ class BaseAgent(ABC):
         except Exception as e:
             raise LLMError(f"Failed to initialize {self.provider} LLM: {e}")
 
-    @retry_with_exponential_backoff(
-        max_retries=3, initial_delay=1.0, exceptions=(Exception,)
-    )
     def invoke_llm(self, prompt: str) -> str:
         """
         Invoke LLM with retry logic.
@@ -99,12 +96,18 @@ class BaseAgent(ABC):
         Returns:
             LLM response content
         """
-        try:
-            response = self.llm.invoke(prompt)
-            return response.content.strip()
-        except Exception as e:
-            logger.error(f"LLM invocation failed: {e}")
-            raise LLMError(f"LLM invocation failed: {e}")
+        @retry_with_exponential_backoff(
+            max_retries=self.max_retries, initial_delay=1.0, exceptions=(Exception,)
+        )
+        def _invoke():
+            try:
+                response = self.llm.invoke(prompt)
+                return response.content.strip()
+            except Exception as e:
+                logger.error(f"LLM invocation failed: {e}")
+                raise LLMError(f"LLM invocation failed: {e}")
+
+        return _invoke()
 
     @staticmethod
     def parse_json_response(content: str) -> Any:

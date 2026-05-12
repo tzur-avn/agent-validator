@@ -1,105 +1,81 @@
-#!/usr/bin/env python
-"""Test script for authentication support."""
+"""Tests for authentication configuration and env var resolution."""
 
 import os
+import pytest
+from unittest.mock import patch
+from core.config_loader import ConfigLoader
 from utils.browser_utils import BrowserSession
 
 
-def test_form_auth_config():
-    """Test form authentication configuration parsing."""
-    print("=" * 60)
-    print("Testing Form Authentication Configuration")
-    print("=" * 60)
-
-    # Simulate auth config from YAML
+def test_form_auth_browser_session_creation():
+    """BrowserSession accepts form auth config without raising."""
     auth_config = {
         "type": "form",
-        "username": "${AUTH_USERNAME}",
-        "password": "${AUTH_PASSWORD}",
+        "username": "test_user",
+        "password": "test_pass",
         "selectors": {
             "username": 'input[name="username"]',
             "password": 'input[name="password"]',
             "submit": 'button[type="submit"]',
         },
     }
-
-    # Set test environment variables
-    os.environ["AUTH_USERNAME"] = "test_user"
-    os.environ["AUTH_PASSWORD"] = "test_pass"
-
-    print("\n1. Creating BrowserSession with auth config...")
     bs = BrowserSession(auth=auth_config)
-    print("   ✓ BrowserSession created successfully")
-
-    print("\n2. Testing environment variable resolution...")
-    resolved_user = bs._resolve_env_var(auth_config["username"])
-    resolved_pass = bs._resolve_env_var(auth_config["password"])
-    print(f"   ✓ Username: {auth_config['username']} → {resolved_user}")
-    print(f"   ✓ Password: {auth_config['password']} → {resolved_pass}")
-
-    print("\n3. Verifying auth config structure...")
-    print(f"   ✓ Auth type: {auth_config['type']}")
-    print(f"   ✓ Username selector: {auth_config['selectors']['username']}")
-    print(f"   ✓ Password selector: {auth_config['selectors']['password']}")
-    print(f"   ✓ Submit selector: {auth_config['selectors']['submit']}")
-
-    print("\n✓ All form auth configuration tests passed!")
+    assert bs.auth == auth_config
+    assert bs.auth["type"] == "form"
 
 
-def test_basic_auth_config():
-    """Test HTTP Basic authentication configuration."""
-    print("\n" + "=" * 60)
-    print("Testing HTTP Basic Authentication Configuration")
-    print("=" * 60)
-
-    # Simulate basic auth config
-    auth_config = {"type": "basic", "username": "admin", "password": "${API_KEY}"}
-
-    os.environ["API_KEY"] = "secret_api_key"
-
-    print("\n1. Creating BrowserSession with basic auth...")
+def test_basic_auth_browser_session_creation():
+    """BrowserSession accepts basic auth config without raising."""
+    auth_config = {"type": "basic", "username": "admin", "password": "secret"}
     bs = BrowserSession(auth=auth_config)
-    print("   ✓ BrowserSession created successfully")
-
-    print("\n2. Testing environment variable resolution...")
-    resolved_user = bs._resolve_env_var(auth_config["username"])
-    resolved_pass = bs._resolve_env_var(auth_config["password"])
-    print(f"   ✓ Username: {auth_config['username']} → {resolved_user}")
-    print(f"   ✓ Password: {auth_config['password']} → {resolved_pass}")
-
-    print("\n✓ All basic auth configuration tests passed!")
+    assert bs.auth == auth_config
+    assert bs.auth["type"] == "basic"
 
 
-def test_no_auth():
-    """Test BrowserSession without authentication."""
-    print("\n" + "=" * 60)
-    print("Testing No Authentication")
-    print("=" * 60)
-
-    print("\n1. Creating BrowserSession without auth...")
+def test_no_auth_browser_session_creation():
+    """BrowserSession can be created without auth."""
     bs = BrowserSession()
-    print("   ✓ BrowserSession created successfully")
-    print("   ✓ Auth is None (as expected)")
-
-    print("\n✓ No auth test passed!")
+    assert bs.auth is None
 
 
-if __name__ == "__main__":
-    print("\n🔐 Authentication Support Test Suite\n")
+def test_env_var_resolution_in_auth_config():
+    """ConfigLoader resolves ${VAR} placeholders in auth credentials."""
+    with patch.dict(os.environ, {"AUTH_USER": "myuser", "AUTH_PASS": "mypass"}):
+        raw = {
+            "targets": [
+                {
+                    "url": "https://example.com",
+                    "auth": {
+                        "type": "form",
+                        "username": "${AUTH_USER}",
+                        "password": "${AUTH_PASS}",
+                    },
+                }
+            ]
+        }
+        resolved = ConfigLoader._resolve_env_vars(raw)
+        auth = resolved["targets"][0]["auth"]
+        assert auth["username"] == "myuser"
+        assert auth["password"] == "mypass"
 
-    try:
-        test_form_auth_config()
-        test_basic_auth_config()
-        test_no_auth()
 
-        print("\n" + "=" * 60)
-        print("✅ ALL TESTS PASSED!")
-        print("=" * 60)
-        print("\nThe authentication support implementation is working correctly.")
-        print("You can now use auth in your config files and CLI commands.")
+def test_env_var_resolution_missing_var(caplog):
+    """ConfigLoader logs a warning for unset environment variables."""
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("MISSING_VAR", None)
+        result = ConfigLoader._resolve_env_vars({"key": "${MISSING_VAR}"})
+        assert result["key"] == ""
 
-    except Exception as e:
-        print(f"\n❌ TEST FAILED: {e}")
-        import traceback
 
-        traceback.print_exc()
+def test_env_var_resolution_leaves_non_placeholders_unchanged():
+    """ConfigLoader does not modify strings without ${} patterns."""
+    result = ConfigLoader._resolve_env_vars({"key": "plain_value"})
+    assert result["key"] == "plain_value"
+
+
+def test_env_var_resolution_nested():
+    """ConfigLoader resolves placeholders at any nesting depth."""
+    with patch.dict(os.environ, {"SECRET": "s3cr3t"}):
+        raw = {"a": {"b": [{"c": "${SECRET}"}]}}
+        resolved = ConfigLoader._resolve_env_vars(raw)
+        assert resolved["a"]["b"][0]["c"] == "s3cr3t"

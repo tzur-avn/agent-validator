@@ -1,5 +1,6 @@
 """Orchestrator for running multiple agents."""
 
+import hashlib
 import json
 import logging
 from typing import List, Dict, Any, Optional
@@ -343,9 +344,9 @@ class Orchestrator:
                 # No authentication
                 auth_key = "no_auth"
             else:
-                # Create a deterministic key from auth config
-                # Sort keys to ensure consistent hashing
-                auth_key = json.dumps(auth_config, sort_keys=True)
+                # Hash the serialized auth config to avoid storing credentials in memory as plain strings
+                raw = json.dumps(auth_config, sort_keys=True).encode()
+                auth_key = hashlib.sha256(raw).hexdigest()
 
             if auth_key not in auth_groups:
                 auth_groups[auth_key] = []

@@ -195,7 +195,6 @@ def main():
                 sys.exit(1)
 
         # Create orchestrator
-        show_progress = not args.quiet  # Hide progress bars in quiet mode
         orchestrator = Orchestrator(config._config, show_progress=show_progress)
 
         # Determine what to run
@@ -280,9 +279,11 @@ def main():
             if not args.quiet or output_format != "text":
                 print("\n" + report_content)
 
+        # Always compute summary so the exit code is set correctly
+        summary = orchestrator.get_summary(results)
+
         # Print summary
         if not args.quiet:
-            summary = orchestrator.get_summary(results)
             print("\n" + "=" * 60)
             print("SUMMARY")
             print("=" * 60)
