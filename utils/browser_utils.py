@@ -66,6 +66,7 @@ class BrowserSession:
         self.auth = auth
         self.playwright: Optional[Playwright] = None
         self.browser: Optional[Browser] = None
+        self._context = None
         self.page: Optional[Page] = None
         self._authenticated = False
 
@@ -84,8 +85,8 @@ class BrowserSession:
                 }
                 logger.debug("Configured HTTP Basic Authentication")
 
-            context = self.browser.new_context(**context_options)
-            self.page = context.new_page()
+            self._context = self.browser.new_context(**context_options)
+            self.page = self._context.new_page()
             self.page.set_default_timeout(self.timeout)
             logger.debug(f"Browser session started with viewport {self.viewport}")
             return self
@@ -100,6 +101,8 @@ class BrowserSession:
     def _cleanup(self):
         """Clean up browser resources."""
         try:
+            if self._context:
+                self._context.close()
             if self.browser:
                 self.browser.close()
             if self.playwright:
@@ -154,7 +157,7 @@ class BrowserSession:
                 # This helps with SPAs that need time to render after URL change
                 try:
                     self.page.wait_for_load_state("networkidle", timeout=10000)
-                except:
+                except Exception:
                     # If networkidle times out, give it a bit more time
                     self.page.wait_for_timeout(2000)
 
@@ -300,7 +303,7 @@ class BrowserSession:
                 password_selector, state="hidden", timeout=timeout
             )
             logger.info("Login form no longer visible - page content ready")
-        except:
+        except Exception:
             # Check if password field still exists
             if self.page.query_selector(password_selector):
                 logger.warning(
@@ -385,7 +388,7 @@ class BrowserSession:
                     lambda url: "/auth" not in url, timeout=wait_time
                 )
                 logger.info("Login successful - redirected away from auth page")
-            except:
+            except Exception:
                 # URL didn't change - login might have failed
                 logger.warning(
                     f"URL did not change after login - still at {self.page.url}"
