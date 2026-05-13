@@ -53,7 +53,7 @@ Examples:
         "--agents",
         type=str,
         nargs="+",
-        choices=["spell_checker", "visual_qa"],
+        choices=["spell_checker", "visual_qa", "accessibility", "performance", "seo", "broken_links", "security_headers"],
         help="Specific agents to run (default: all enabled)",
     )
 

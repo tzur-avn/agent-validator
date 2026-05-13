@@ -21,6 +21,33 @@ agents:
         name: "Desktop"
     wait_time: 5000  # milliseconds to wait before screenshot
 
+  accessibility:
+    enabled: false
+    provider: "openai"
+    model: "gpt-4o"
+    temperature: 0
+    viewport_width: 1920
+    viewport_height: 1080
+    wait_time: 3000
+
+  performance:
+    enabled: false
+    wait_time: 5000  # milliseconds to wait after load before collecting metrics
+
+  seo:
+    enabled: false
+    provider: "openai"
+    model: "gpt-4o"
+    temperature: 0
+
+  broken_links:
+    enabled: false
+    max_links: 100    # maximum links to check per page
+    link_timeout: 10  # seconds per HTTP request
+
+  security_headers:
+    enabled: false
+
 
 # Use 'urls' (plural) to specify multiple URLs with the same auth config
 # The system will authenticate once and reuse the session across all URLs
