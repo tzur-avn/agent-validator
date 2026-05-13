@@ -50,7 +50,7 @@ def capture_visual_node(state: AgentState):
 
 # --- Node 2: AI Visual Analysis with Gemini Vision ---
 def analyze_visual_node(state: AgentState):
-    print(f"--- Gemini analyzing visual elements ---")
+    print("--- Gemini analyzing visual elements ---")
 
     llm = ChatGoogleGenerativeAI(model="models/gemini-2.5-flash", temperature=0)
 

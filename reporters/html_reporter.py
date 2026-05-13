@@ -628,7 +628,6 @@ class HTMLReporter(BaseReporter):
     ) -> str:
         """Format a single result as HTML."""
         agent_name = result.get("agent", "Unknown")
-        url = result.get("url", "Unknown")
         success = result.get("success", False)
         status_class = "status-pass" if success else "status-fail"
         status_icon = "✓" if success else "✗"

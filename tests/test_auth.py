@@ -1,7 +1,6 @@
 """Tests for authentication configuration and env var resolution."""
 
 import os
-import pytest
 from unittest.mock import patch
 from core.config_loader import ConfigLoader
 from utils.browser_utils import BrowserSession

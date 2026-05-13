@@ -1,7 +1,5 @@
 """Tests for Slack integration components."""
 
-import pytest
-from unittest.mock import Mock, MagicMock
 from datetime import datetime, timedelta
 
 from integrations.conversation_manager import ConversationManager

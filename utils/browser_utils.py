@@ -265,7 +265,7 @@ class BrowserSession:
                 # Screenshot specific region
                 screenshot_bytes = self.page.screenshot(clip=clip_region)
                 screenshot_b64 = base64.b64encode(screenshot_bytes).decode("utf-8")
-                logger.debug(f"Region screenshot captured")
+                logger.debug("Region screenshot captured")
                 return screenshot_b64
             else:
                 logger.debug("No selector or clip region provided")

@@ -1,8 +1,6 @@
 """Unit tests for configuration loader."""
 
 import pytest
-import yaml
-from pathlib import Path
 from core.config_loader import Config, ConfigLoader
 from core.exceptions import ConfigurationError
 

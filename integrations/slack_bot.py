@@ -80,7 +80,6 @@ class SlackBot:
             client: Slack client
         """
         user_id = message.get("user")
-        channel_id = message.get("channel")
         text = message.get("text", "").strip()
 
         # Remove bot mention from text

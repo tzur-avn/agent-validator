@@ -70,7 +70,7 @@ def analyze_text_node(state: AgentState):
     
     try:
         found_errors = json.loads(content)
-    except:
+    except Exception:
         found_errors = []
         
     return {"errors": found_errors}

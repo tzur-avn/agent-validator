@@ -1,9 +1,7 @@
 """Unit tests for base agent functionality."""
 
-import pytest
 from unittest.mock import Mock, patch
 from agents.base_agent import BaseAgent
-from core.exceptions import LLMError
 
 
 class MockAgent(BaseAgent):

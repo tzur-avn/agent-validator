@@ -1,7 +1,7 @@
 """Progress tracking utilities for agent execution."""
 
 import logging
-from typing import Optional, Callable
+from typing import Optional
 from contextlib import contextmanager
 from rich.progress import (
     Progress,

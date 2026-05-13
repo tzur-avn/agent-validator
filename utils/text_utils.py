@@ -1,6 +1,5 @@
 """Text processing utilities."""
 
-import re
 from typing import Optional
 from bidi.algorithm import get_display
 

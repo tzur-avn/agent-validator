@@ -5,7 +5,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from core.config_loader import ConfigLoader
-from integrations.slack_bot import SlackBot
 from integrations.conversation_manager import ConversationManager
 from integrations.slack_formatter import SlackFormatter
 
@@ -28,7 +27,7 @@ def example_conversation_manager():
 
     # Update conversation with data
     manager.update_conversation(user_id, {"url": "https://example.com"})
-    print(f"Updated conversation with URL")
+    print("Updated conversation with URL")
 
     # Get conversation
     current = manager.get_conversation(user_id)
@@ -36,7 +35,7 @@ def example_conversation_manager():
 
     # End conversation
     manager.end_conversation(user_id)
-    print(f"Ended conversation\n")
+    print("Ended conversation\n")
 
 
 def example_formatter():

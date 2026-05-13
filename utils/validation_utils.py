@@ -1,7 +1,7 @@
 """Input validation utilities."""
 
 import re
-from typing import Optional, Tuple
+from typing import Tuple
 from urllib.parse import urlparse
 from core.exceptions import ValidationError
 
