@@ -6,7 +6,15 @@ import logging
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from agents import SpellCheckerAgent, VisualQAAgent
+from agents import (
+    SpellCheckerAgent,
+    VisualQAAgent,
+    AccessibilityAgent,
+    PerformanceAgent,
+    SEOAgent,
+    BrokenLinksAgent,
+    SecurityHeadersAgent,
+)
 from core.exceptions import AgentValidatorError
 from utils.validation_utils import validate_url
 from utils.progress_utils import ProgressTracker
@@ -20,6 +28,11 @@ class Orchestrator:
     AGENT_REGISTRY = {
         "spell_checker": SpellCheckerAgent,
         "visual_qa": VisualQAAgent,
+        "accessibility": AccessibilityAgent,
+        "performance": PerformanceAgent,
+        "seo": SEOAgent,
+        "broken_links": BrokenLinksAgent,
+        "security_headers": SecurityHeadersAgent,
     }
 
     def __init__(
