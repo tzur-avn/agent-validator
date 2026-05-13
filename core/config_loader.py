@@ -6,7 +6,7 @@ import yaml
 import logging
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from core.exceptions import ConfigurationError
+from core.exceptions import ConfigurationError, ValidationError
 from utils.validation_utils import (
     validate_url,
     validate_viewport,
@@ -41,40 +41,48 @@ class Config:
                         f"Agent config for {agent_name} must be a dictionary"
                     )
 
-                # Validate provider if present
-                if "provider" in agent_config:
-                    validate_provider(agent_config["provider"])
+                try:
+                    # Validate provider if present
+                    if "provider" in agent_config:
+                        validate_provider(agent_config["provider"])
 
-                # Validate model if present
-                if "model" in agent_config:
-                    validate_model_name(agent_config["model"])
+                    # Validate model if present
+                    if "model" in agent_config:
+                        validate_model_name(agent_config["model"])
 
-                # Validate temperature if present
-                if "temperature" in agent_config:
-                    validate_temperature(agent_config["temperature"])
+                    # Validate temperature if present
+                    if "temperature" in agent_config:
+                        validate_temperature(agent_config["temperature"])
 
-                # Validate viewports for visual_qa agent
-                if agent_name == "visual_qa" and "viewports" in agent_config:
-                    for viewport in agent_config["viewports"]:
-                        validate_viewport(
-                            viewport.get("width", 1920), viewport.get("height", 1080)
-                        )
+                    # Validate viewports for visual_qa agent
+                    if agent_name == "visual_qa" and "viewports" in agent_config:
+                        for viewport in agent_config["viewports"]:
+                            validate_viewport(
+                                viewport.get("width", 1920), viewport.get("height", 1080)
+                            )
+                except ValidationError as e:
+                    raise ConfigurationError(
+                        f"Invalid configuration for agent '{agent_name}': {e}"
+                    ) from e
 
         # Validate targets section
         if "targets" in self._config:
             for target in self._config["targets"]:
                 # Support both 'url' (single) and 'urls' (array)
-                if "url" in target:
-                    validate_url(target["url"])
-                elif "urls" in target:
-                    if not isinstance(target["urls"], list):
-                        raise ConfigurationError(
-                            "Target 'urls' field must be a list of URLs"
-                        )
-                    for url in target["urls"]:
-                        validate_url(url)
-                else:
-                    raise ConfigurationError("Target missing 'url' or 'urls' field")
+                try:
+                    if "url" in target:
+                        validate_url(target["url"])
+                    elif "urls" in target:
+                        if not isinstance(target["urls"], list):
+                            raise ConfigurationError(
+                                "Target 'urls' field must be a list of URLs"
+                            )
+                        for url in target["urls"]:
+                            validate_url(url)
+                    else:
+                        raise ConfigurationError("Target missing 'url' or 'urls' field")
+                except ValidationError as e:
+                    raise ConfigurationError(f"Invalid target URL: {e}") from e
 
                 # Validate auth configuration if present
                 if "auth" in target:
